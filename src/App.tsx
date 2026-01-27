@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Entry pages
 import Splash from "./pages/Splash";
@@ -56,26 +57,32 @@ const App = () => (
           <Route path="/termos" element={<TermsAndPrivacy />} />
 
           {/* Student routes */}
-          <Route path="/aluno/revisar-dados" element={<StudentProfileReview />} />
-          <Route path="/aluno/dashboard" element={<StudentDashboard />} />
-          <Route path="/aluno/capacitacao" element={<StudentTrainingFlow />} />
-          <Route path="/aluno/historico" element={<StudentTrainingHistory />} />
+          <Route element={<ProtectedRoute allowedRoles={["student", "manager", "admin"]} />}>
+            <Route path="/aluno/revisar-dados" element={<StudentProfileReview />} />
+            <Route path="/aluno/dashboard" element={<StudentDashboard />} />
+            <Route path="/aluno/capacitacao" element={<StudentTrainingFlow />} />
+            <Route path="/aluno/historico" element={<StudentTrainingHistory />} />
+          </Route>
 
           {/* Manager routes */}
-          <Route path="/gestor/dashboard" element={<ManagerDashboard />} />
-          <Route path="/gestor/aderencia" element={<ManagerComplianceDetail />} />
-          <Route path="/gestor/dossie/:id" element={<ManagerCollaboratorDossier />} />
+          <Route element={<ProtectedRoute allowedRoles={["manager", "admin"]} />}>
+            <Route path="/gestor/dashboard" element={<ManagerDashboard />} />
+            <Route path="/gestor/aderencia" element={<ManagerComplianceDetail />} />
+            <Route path="/gestor/dossie/:id" element={<ManagerCollaboratorDossier />} />
+          </Route>
 
           {/* Admin routes */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/capacitacoes" element={<AdminTrainingCatalog />} />
-          <Route path="/admin/capacitacoes/nova" element={<AdminTrainingCreate />} />
-          <Route path="/admin/capacitacoes/:id" element={<AdminTrainingDetail />} />
-          <Route path="/admin/usuarios" element={<AdminUsersManagement />} />
-          <Route path="/admin/usuarios/novo" element={<AdminUserCreate />} />
-          <Route path="/admin/usuarios/:id" element={<AdminUserDetail />} />
-          <Route path="/admin/auditoria" element={<AdminAuditLog />} />
-          <Route path="/admin/relatorios" element={<AdminReports />} />
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/capacitacoes" element={<AdminTrainingCatalog />} />
+            <Route path="/admin/capacitacoes/nova" element={<AdminTrainingCreate />} />
+            <Route path="/admin/capacitacoes/:id" element={<AdminTrainingDetail />} />
+            <Route path="/admin/usuarios" element={<AdminUsersManagement />} />
+            <Route path="/admin/usuarios/novo" element={<AdminUserCreate />} />
+            <Route path="/admin/usuarios/:id" element={<AdminUserDetail />} />
+            <Route path="/admin/auditoria" element={<AdminAuditLog />} />
+            <Route path="/admin/relatorios" element={<AdminReports />} />
+          </Route>
 
           {/* Utility routes */}
           <Route path="/acesso-negado" element={<AccessDenied />} />
