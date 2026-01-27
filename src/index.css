@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* SRC - Sistema de Registro de Capacitações
+   Design System - Prefeitura Municipal de Paulínia / NEP
+   Institucional + Acolhedor
+*/
+
+@layer base {
+  :root {
+    /* Core institutional palette */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 20%;
+
+    /* Primary - Institutional Blue (Student) */
+    --primary: 207 68% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Soft blue-gray */
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 215 25% 25%;
+
+    /* Muted */
+    --muted: 210 15% 94%;
+    --muted-foreground: 215 15% 50%;
+
+    /* Accent - Warm teal */
+    --accent: 180 40% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Role-specific colors */
+    --student: 207 68% 36%;
+    --student-foreground: 0 0% 100%;
+    --student-light: 207 60% 95%;
+
+    --admin: 28 85% 52%;
+    --admin-foreground: 0 0% 100%;
+    --admin-light: 28 80% 95%;
+
+    --manager: 145 63% 42%;
+    --manager-foreground: 0 0% 100%;
+    --manager-light: 145 50% 95%;
+
+    /* Status colors */
+    --success: 145 63% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 207 68% 50%;
+    --info-foreground: 0 0% 100%;
+
+    /* UI elements */
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 207 68% 36%;
+    --radius: 0.625rem;
+
+    /* Sidebar */
+    --sidebar-background: 210 20% 98%;
+    --sidebar-foreground: 215 25% 30%;
+    --sidebar-primary: 207 68% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 94%;
+    --sidebar-accent-foreground: 215 25% 25%;
+    --sidebar-border: 214 20% 90%;
+    --sidebar-ring: 207 68% 36%;
+
+    /* Chart colors */
+    --chart-1: 207 68% 36%;
+    --chart-2: 145 63% 42%;
+    --chart-3: 28 85% 52%;
+    --chart-4: 180 40% 45%;
+    --chart-5: 280 60% 50%;
+  }
+
+  .dark {
+    --background: 220 20% 10%;
+    --foreground: 210 20% 95%;
+    --card: 220 20% 13%;
+    --card-foreground: 210 20% 95%;
+    --popover: 220 20% 13%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 207 60% 55%;
+    --primary-foreground: 220 20% 10%;
+    --secondary: 220 15% 20%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 215 15% 60%;
+    --accent: 180 35% 50%;
+    --accent-foreground: 220 20% 10%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 22%;
+    --input: 220 15% 22%;
+    --ring: 207 60% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Institutional card styles */
+  .card-institutional {
+    @apply bg-card rounded-xl border border-border shadow-sm;
+  }
+
+  .card-elevated {
+    @apply bg-card rounded-xl border border-border shadow-md hover:shadow-lg transition-shadow;
+  }
+
+  /* Role-specific button variants */
+  .btn-student {
+    @apply bg-[hsl(var(--student))] text-[hsl(var(--student-foreground))] hover:bg-[hsl(207,68%,32%)] transition-colors;
+  }
+
+  .btn-admin {
+    @apply bg-[hsl(var(--admin))] text-[hsl(var(--admin-foreground))] hover:bg-[hsl(28,85%,46%)] transition-colors;
+  }
+
+  .btn-manager {
+    @apply bg-[hsl(var(--manager))] text-[hsl(var(--manager-foreground))] hover:bg-[hsl(145,63%,36%)] transition-colors;
+  }
+
+  /* Status chips */
+  .chip-success {
+    @apply bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .chip-warning {
+    @apply bg-[hsl(var(--warning)/0.15)] text-[hsl(28,80%,40%)] px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .chip-danger {
+    @apply bg-[hsl(var(--destructive)/0.15)] text-[hsl(var(--destructive))] px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .chip-info {
+    @apply bg-[hsl(var(--info)/0.15)] text-[hsl(var(--info))] px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  /* Topbar sticky */
+  .topbar-sticky {
+    @apply sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border;
+  }
+
+  /* Form input styles */
+  .input-institutional {
+    @apply w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all;
+  }
+
+  /* Progress indicator */
+  .progress-step {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all;
+  }
+
+  .progress-step-active {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .progress-step-completed {
+    @apply bg-[hsl(var(--success))] text-white;
+  }
+
+  .progress-step-pending {
+    @apply bg-muted text-muted-foreground;
+  }
+}
+
+@layer utilities {
+  .gradient-student {
+    background: linear-gradient(135deg, hsl(var(--student)) 0%, hsl(207, 68%, 45%) 100%);
+  }
+
+  .gradient-admin {
+    background: linear-gradient(135deg, hsl(var(--admin)) 0%, hsl(28, 85%, 58%) 100%);
+  }
+
+  .gradient-manager {
+    background: linear-gradient(135deg, hsl(var(--manager)) 0%, hsl(145, 63%, 50%) 100%);
+  }
+
+  .gradient-institutional {
+    background: linear-gradient(135deg, hsl(207, 68%, 36%) 0%, hsl(180, 40%, 45%) 100%);
+  }
+}
