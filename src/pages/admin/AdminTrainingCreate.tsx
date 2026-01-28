@@ -17,10 +17,7 @@ const versoes = [
   { value: "1.1", label: "v1.1" },
 ];
 
-
-const instituicoes = [
-  { value: "hospital_municipal", label: "Hospital Municipal" },
-];
+const instituicoes = [{ value: "hospital_municipal", label: "Hospital Municipal" }];
 
 const setores = [
   { value: "", label: "Todos os setores" },
@@ -64,17 +61,32 @@ const tabs = [
   { id: "publish", label: "Publicação" },
 ];
 
+type QuizQuestion = {
+  id: number;
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  correct: "a" | "b" | "c" | "";
+};
+
 export default function AdminTrainingCreate() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("basic");
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["id"]>("basic");
+
+  // Basic
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [referenceManager, setReferenceManager] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
   const [instructorName, setInstructorName] = useState("");
   const [version, setVersion] = useState("");
+
+  // Media
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [videoLink, setVideoLink] = useState("");
+
+  // Audience
   const [institution, setInstitution] = useState("");
   const [sector, setSector] = useState("");
   const [professionalCategory, setProfessionalCategory] = useState("");
@@ -83,47 +95,59 @@ export default function AdminTrainingCreate() {
   const [completionDeadline, setCompletionDeadline] = useState("");
   const [requirementLevel, setRequirementLevel] = useState("");
   const [audienceMessage, setAudienceMessage] = useState("");
+
+  // Content
   const [referencePdfFile, setReferencePdfFile] = useState<File | null>(null);
+
+  // Term
   const [termModel, setTermModel] = useState("");
   const [termText, setTermText] = useState("");
+
+  // Save
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const [questions, setQuestions] = useState([
+  // Quiz
+  const [questions, setQuestions] = useState<QuizQuestion[]>([
     { id: 1, question: "", optionA: "", optionB: "", optionC: "", correct: "" },
   ]);
 
   const addQuestion = () => {
-    setQuestions([
-      ...questions,
-      { id: questions.length + 1, question: "", optionA: "", optionB: "", optionC: "", correct: "" },
+    setQuestions((prev) => [
+      ...prev,
+      {
+        id: prev.length ? Math.max(...prev.map((q) => q.id)) + 1 : 1,
+        question: "",
+        optionA: "",
+        optionB: "",
+        optionC: "",
+        correct: "",
+      },
     ]);
   };
 
   const removeQuestion = (id: number) => {
-    setQuestions(questions.filter((q) => q.id !== id));
+    setQuestions((prev) => prev.filter((q) => q.id !== id));
   };
 
   const handleQuestionChange = (
     id: number,
-    field: "question" | "optionA" | "optionB" | "optionC" | "correct",
+    field: keyof Omit<QuizQuestion, "id">,
     value: string
   ) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, [field]: value } : q))
-    );
+    setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, [field]: value } : q)));
   };
 
   const uploadFile = async (file: File, folder: string) => {
-    const filePath = `${folder}/${crypto.randomUUID()}-${file.name}`;
-    const { error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(filePath, file);
+    const safeName = file.name.replaceAll(" ", "_");
+    const filePath = `${folder}/${crypto.randomUUID()}-${safeName}`;
 
-    if (error) {
-      throw error;
-    }
+    const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
 
+    if (error) throw error;
     return filePath;
   };
 
@@ -135,6 +159,7 @@ export default function AdminTrainingCreate() {
       const coverImagePath = coverImageFile
         ? await uploadFile(coverImageFile, "cover-images")
         : null;
+
       const referencePdfPath = referencePdfFile
         ? await uploadFile(referencePdfFile, "reference-materials")
         : null;
@@ -143,7 +168,7 @@ export default function AdminTrainingCreate() {
         title,
         description,
         reference_manager: referenceManager,
-        duration_minutes: durationMinutes,
+        duration_minutes: durationMinutes ? Number(durationMinutes) : null,
         instructor_name: instructorName,
         version,
         cover_image_path: coverImagePath,
@@ -164,15 +189,11 @@ export default function AdminTrainingCreate() {
       };
 
       const { error } = await supabase.from(TRAININGS_TABLE).insert([payload]);
-
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       navigate("/admin/capacitacoes");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Erro ao salvar capacitação.";
+      const message = error instanceof Error ? error.message : "Erro ao salvar capacitação.";
       setSaveError(message);
     } finally {
       setIsSaving(false);
@@ -181,10 +202,7 @@ export default function AdminTrainingCreate() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <TopbarSticky 
-        title="Nova capacitação" 
-        backTo="/admin/capacitacoes"
-      />
+      <TopbarSticky title="Nova capacitação" backTo="/admin/capacitacoes" />
 
       <main className="flex-1 px-4 py-6">
         <div className="container max-w-4xl mx-auto">
@@ -199,6 +217,7 @@ export default function AdminTrainingCreate() {
                     ? "bg-admin text-white"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
+                type="button"
               >
                 {tab.label}
               </button>
@@ -207,15 +226,18 @@ export default function AdminTrainingCreate() {
 
           {/* Tab content */}
           <div className="space-y-6">
+            {/* BASIC */}
             {activeTab === "basic" && (
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Informações básicas</h3>
+
                 <InputField
                   label="Título da capacitação *"
                   placeholder="Ex: Segurança do Paciente"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                 />
+
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Descrição</label>
                   <textarea
@@ -225,20 +247,25 @@ export default function AdminTrainingCreate() {
                     onChange={(event) => setDescription(event.target.value)}
                   />
                 </div>
+
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <InputField
+                  <SelectField
                     label="Gestor de referência"
-                    placeholder="Nome do gestor"
+                    options={gestores}
+                    placeholder="Selecione"
                     value={referenceManager}
                     onChange={(event) => setReferenceManager(event.target.value)}
                   />
+
                   <InputField
                     label="Duração (minutos)"
+                    type="number"
                     placeholder="45"
                     value={durationMinutes}
                     onChange={(event) => setDurationMinutes(event.target.value)}
                   />
                 </div>
+
                 <div className="grid sm:grid-cols-2 gap-4">
                   <InputField
                     label="Nome do instrutor"
@@ -246,50 +273,45 @@ export default function AdminTrainingCreate() {
                     value={instructorName}
                     onChange={(event) => setInstructorName(event.target.value)}
                   />
-                  <InputField
+
+                  <SelectField
                     label="Versão"
-                    placeholder="Ex: v1.0"
+                    options={versoes}
+                    placeholder="Selecione"
                     value={version}
                     onChange={(event) => setVersion(event.target.value)}
                   />
-                  <SelectField label="Gestor de referência" options={gestores} placeholder="Selecione" />
-                  <InputField label="Duração (minutos)" type="number" placeholder="45" />
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <InputField label="Nome do instrutor" placeholder="Nome do instrutor responsável" />
-                  <SelectField label="Versão" options={versoes} placeholder="Selecione" />
                 </div>
               </div>
             )}
 
+            {/* MEDIA */}
             {activeTab === "media" && (
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Mídia</h3>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Imagem de capa</label>
-<<<<<<< HEAD
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 min-h-[360px] flex flex-col items-center justify-center text-center">
-=======
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                    Imagem de capa
+                  </label>
+
                   <label className="border-2 border-dashed border-border rounded-lg p-8 min-h-[240px] flex flex-col items-center justify-center text-center cursor-pointer">
                     <input
                       type="file"
                       accept="image/*"
                       className="sr-only"
-                      onChange={(event) =>
-                        setCoverImageFile(event.target.files?.[0] ?? null)
-                      }
+                      onChange={(event) => setCoverImageFile(event.target.files?.[0] ?? null)}
                     />
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 min-h-[240px] flex flex-col items-center justify-center text-center">
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
+
                     <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Clique ou arraste para enviar</p>
+
                     {coverImageFile && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {coverImageFile.name}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">{coverImageFile.name}</p>
                     )}
                   </label>
                 </div>
+
                 <InputField
                   label="Link do vídeo (YouTube)"
                   placeholder="https://youtube.com/watch?v=..."
@@ -302,16 +324,12 @@ export default function AdminTrainingCreate() {
               </div>
             )}
 
+            {/* AUDIENCE */}
             {activeTab === "audience" && (
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Público-alvo</h3>
+
                 <div className="grid sm:grid-cols-2 gap-4">
-<<<<<<< HEAD
-                  <SelectField label="Unidade" options={instituicoes} placeholder="Selecione" />
-                  <SelectField label="Setor" options={setores} placeholder="Todos" />
-                  <SelectField label="Categoria profissional" options={categoriasProf} placeholder="Todas" />
-                  <InputField label="Prazo de conclusão" type="date" />
-=======
                   <SelectField
                     label="Instituição"
                     options={instituicoes}
@@ -353,11 +371,12 @@ export default function AdminTrainingCreate() {
                     value={completionDeadline}
                     onChange={(event) => setCompletionDeadline(event.target.value)}
                   />
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
                 </div>
-                
+
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-foreground">Nível de obrigatoriedade</label>
+                  <label className="block text-sm font-medium text-foreground">
+                    Nível de obrigatoriedade
+                  </label>
                   <div className="space-y-2">
                     {[
                       { value: "obrigatoria", label: "Obrigatória" },
@@ -380,8 +399,6 @@ export default function AdminTrainingCreate() {
                     ))}
                   </div>
                 </div>
-<<<<<<< HEAD
-=======
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">
@@ -394,37 +411,39 @@ export default function AdminTrainingCreate() {
                     onChange={(event) => setAudienceMessage(event.target.value)}
                   />
                 </div>
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
               </div>
             )}
 
+            {/* CONTENT */}
             {activeTab === "content" && (
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Conteúdo</h3>
-                
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Material de estudo (PDF)</label>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                    Material de estudo (PDF)
+                  </label>
+
                   <label className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer block">
                     <input
                       type="file"
                       accept="application/pdf"
                       className="sr-only"
-                      onChange={(event) =>
-                        setReferencePdfFile(event.target.files?.[0] ?? null)
-                      }
+                      onChange={(event) => setReferencePdfFile(event.target.files?.[0] ?? null)}
                     />
+
                     <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Clique ou arraste para enviar</p>
+
                     {referencePdfFile && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {referencePdfFile.name}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">{referencePdfFile.name}</p>
                     )}
                   </label>
                 </div>
               </div>
             )}
 
+            {/* QUIZ */}
             {activeTab === "quiz" && (
               <div className="card-institutional p-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -441,7 +460,8 @@ export default function AdminTrainingCreate() {
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-foreground">Pergunta {idx + 1}</span>
                         {questions.length > 1 && (
-                          <button 
+                          <button
+                            type="button"
                             onClick={() => removeQuestion(q.id)}
                             className="p-1 text-destructive hover:bg-destructive/10 rounded"
                           >
@@ -449,16 +469,7 @@ export default function AdminTrainingCreate() {
                           </button>
                         )}
                       </div>
-<<<<<<< HEAD
-                      <InputField placeholder="Digite a pergunta..." />
-                      <InputField placeholder="Opção A" />
-                      <InputField placeholder="Opção B" />
-                      <InputField placeholder="Opção C" />
-                      <InputField placeholder="Opção D" />
-                      <InputField placeholder="Opção E" />
-                      <SelectField 
-                        label="Resposta correta" 
-=======
+
                       <InputField
                         placeholder="Digite a pergunta..."
                         value={q.question}
@@ -466,6 +477,7 @@ export default function AdminTrainingCreate() {
                           handleQuestionChange(q.id, "question", event.target.value)
                         }
                       />
+
                       <InputField
                         placeholder="Opção A"
                         value={q.optionA}
@@ -487,26 +499,19 @@ export default function AdminTrainingCreate() {
                           handleQuestionChange(q.id, "optionC", event.target.value)
                         }
                       />
+
                       <SelectField
                         label="Resposta correta"
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
                         options={[
                           { value: "a", label: "Opção A" },
                           { value: "b", label: "Opção B" },
                           { value: "c", label: "Opção C" },
-<<<<<<< HEAD
-                          { value: "d", label: "Opção D" },
-                          { value: "e", label: "Opção E" },
-                        ]} 
-                        placeholder="Selecione" 
-=======
                         ]}
                         placeholder="Selecione"
                         value={q.correct}
                         onChange={(event) =>
                           handleQuestionChange(q.id, "correct", event.target.value)
                         }
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
                       />
                     </div>
                   ))}
@@ -514,18 +519,23 @@ export default function AdminTrainingCreate() {
               </div>
             )}
 
+            {/* TERM */}
             {activeTab === "term" && (
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Termo de ciência</h3>
-<<<<<<< HEAD
+
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Pré-visualização</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                    Pré-visualização
+                  </label>
                   <div className="flex items-center justify-center h-48 bg-muted rounded-lg p-4 overflow-y-auto">
                     <p className="text-center text-sm text-muted-foreground">
-                      Elabore aqui o Termo de Ciência com validade institucional, que será assinado pelo participante após a capacitação.
+                      Elabore aqui o Termo de Ciência com validade institucional, que será assinado
+                      pelo participante após a capacitação.
                     </p>
                   </div>
-=======
+                </div>
+
                 <SelectField
                   label="Modelo de termo"
                   options={termosModelos}
@@ -533,39 +543,43 @@ export default function AdminTrainingCreate() {
                   value={termModel}
                   onChange={(event) => setTermModel(event.target.value)}
                 />
+
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Texto do termo</label>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                    Texto do termo
+                  </label>
                   <textarea
                     className="input-institutional min-h-32 resize-none"
                     placeholder="Digite o termo de ciência..."
                     value={termText}
                     onChange={(event) => setTermText(event.target.value)}
                   />
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
                 </div>
               </div>
             )}
 
+            {/* PUBLISH */}
             {activeTab === "publish" && (
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Publicação</h3>
+
                 <p className="text-muted-foreground">
                   Revise todas as informações antes de publicar a capacitação.
                 </p>
-                {saveError && (
-                  <p className="text-sm text-destructive">{saveError}</p>
-                )}
-                
+
+                {saveError && <p className="text-sm text-destructive">{saveError}</p>}
+
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
-<<<<<<< HEAD
-                  <ButtonRole variant="outline" fullWidth onClick={handleSave}
-                  className="hover:bg-red-600 hover:text-white hover:border-red-600"
+                  <ButtonRole
+                    variant="outline"
+                    fullWidth
+                    onClick={() => navigate("/admin/capacitacoes")}
+                    className="hover:bg-red-600 hover:text-white hover:border-red-600"
+                    disabled={isSaving}
                   >
                     Cancelar
                   </ButtonRole>
-                  <ButtonRole variant="admin" fullWidth onClick={handleSave}
-                  className="!bg-[#50B771] !border-[#50B771] !text-white hover:!bg-[#50B771]/90 hover:!border-[#50B771]"
-=======
+
                   <ButtonRole
                     variant="outline"
                     fullWidth
@@ -574,12 +588,13 @@ export default function AdminTrainingCreate() {
                   >
                     Salvar rascunho
                   </ButtonRole>
+
                   <ButtonRole
                     variant="admin"
                     fullWidth
                     onClick={() => handleSave("published")}
                     disabled={isSaving}
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
+                    className="!bg-[#50B771] !border-[#50B771] !text-white hover:!bg-[#50B771]/90 hover:!border-[#50B771]"
                   >
                     Publicar
                   </ButtonRole>
