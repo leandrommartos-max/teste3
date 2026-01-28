@@ -346,12 +346,11 @@ export default function AdminTrainingCreate() {
                     value={professionalCategory}
                     onChange={(event) => setProfessionalCategory(event.target.value)}
                   />
-                  <SelectField
-                    label="Função"
-                    options={funcoes}
-                    placeholder="Todas"
-                    value={roleFunction}
-                    onChange={(event) => setRoleFunction(event.target.value)}
+                  <InputField
+                    label="Prazo para conclusão"
+                    type="date"
+                    value={completionDeadline}
+                    onChange={(event) => setCompletionDeadline(event.target.value)}
                   />
                   <SelectField
                     label="Vínculo"
@@ -359,12 +358,6 @@ export default function AdminTrainingCreate() {
                     placeholder="Todos"
                     value={employmentBond}
                     onChange={(event) => setEmploymentBond(event.target.value)}
-                  />
-                  <InputField
-                    label="Prazo para conclusão"
-                    type="date"
-                    value={completionDeadline}
-                    onChange={(event) => setCompletionDeadline(event.target.value)}
                   />
                 </div>
 
