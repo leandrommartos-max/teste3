@@ -26,18 +26,6 @@ const categoriasProf = [
   { value: "administrativo", label: "Administrativo" },
 ];
 
-const funcoes = [
-  { value: "", label: "Todas as funções" },
-  { value: "enfermeiro", label: "Enfermeiro(a)" },
-  { value: "tecnico", label: "Técnico(a)" },
-];
-
-const vinculos = [
-  { value: "", label: "Todos os vínculos" },
-  { value: "servidor", label: "Servidor" },
-  { value: "terceirizado", label: "Terceirizado" },
-];
-
 const termosModelos = [
   { value: "padrao", label: "Termo padrão" },
   { value: "nr32", label: "Termo NR-32" },
@@ -352,13 +340,6 @@ export default function AdminTrainingCreate() {
                     value={completionDeadline}
                     onChange={(event) => setCompletionDeadline(event.target.value)}
                   />
-                  <SelectField
-                    label="Vínculo"
-                    options={vinculos}
-                    placeholder="Todos"
-                    value={employmentBond}
-                    onChange={(event) => setEmploymentBond(event.target.value)}
-                  />
                 </div>
 
                 <div className="space-y-2">
@@ -387,18 +368,7 @@ export default function AdminTrainingCreate() {
                     ))}
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Mensagem aos colaboradores
-                  </label>
-                  <textarea
-                    className="input-institutional min-h-20 resize-none"
-                    placeholder="Mensagem opcional para os colaboradores..."
-                    value={audienceMessage}
-                    onChange={(event) => setAudienceMessage(event.target.value)}
-                  />
-                </div>
+               </div>
               </div>
             )}
 
