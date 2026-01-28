@@ -43,6 +43,14 @@ const termosModelos = [
 const TRAININGS_TABLE = "capacitacoes";
 const STORAGE_BUCKET = "capacitacoes-assets";
 
+const createUploadId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
 const tabs = [
   { id: "basic", label: "Básico" },
   { id: "media", label: "Mídia" },
@@ -108,7 +116,7 @@ export default function AdminTrainingCreate() {
       throw new Error("Supabase não configurado.");
     }
 
-    const filePath = `${folder}/${crypto.randomUUID()}-${file.name}`;
+    const filePath = `${folder}/${createUploadId()}-${file.name}`;
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(filePath, file);
@@ -136,12 +144,18 @@ export default function AdminTrainingCreate() {
       const referencePdfPath = referencePdfFile
         ? await uploadFile(referencePdfFile, "reference-materials")
         : null;
+      const trimmedDuration = durationMinutes.trim();
+      const parsedDuration = trimmedDuration ? Number(trimmedDuration) : null;
+      const durationValue =
+        parsedDuration === null || Number.isNaN(parsedDuration)
+          ? null
+          : parsedDuration;
 
       const payload = {
         title,
         description,
         reference_manager: referenceManager,
-        duration_minutes: durationMinutes,
+        duration_minutes: durationValue,
         instructor_name: instructorName,
         version,
         cover_image_path: coverImagePath,
