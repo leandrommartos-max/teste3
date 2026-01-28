@@ -138,7 +138,7 @@ export default function AdminTrainingCreate() {
                 <h3 className="font-display font-semibold text-foreground">Mídia</h3>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Imagem de capa</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 min-h-[240px] flex flex-col items-center justify-center text-center">
                     <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Clique ou arraste para enviar</p>
                   </div>
