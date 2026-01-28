@@ -16,10 +16,6 @@ const versoes = [
   { value: "1.1", label: "v1.1" },
 ];
 
-const statusOptions = [
-  { value: "rascunho", label: "Rascunho" },
-  { value: "publicada", label: "Publicada" },
-];
 
 const instituicoes = [
   { value: "hospital_municipal", label: "Hospital Municipal" },
@@ -126,6 +122,7 @@ export default function AdminTrainingCreate() {
                   />
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
+                  <SelectField label="Gestor de referência" options={gestores} placeholder="Selecione" />
                   <InputField label="Duração (minutos)" type="number" placeholder="45" />
                   <SelectField label="Gestor de referência" options={gestores} placeholder="Selecione" />
                 </div>
@@ -133,10 +130,6 @@ export default function AdminTrainingCreate() {
                   <InputField label="Nome do instrutor" placeholder="Nome do instrutor responsável" />
                   <SelectField label="Versão" options={versoes} placeholder="Selecione" />
                 </div>
-                <SelectField label="Status" options={statusOptions} placeholder="Selecione" />
-                <p className="text-sm text-muted-foreground">
-                  Capacitações em rascunho não são visíveis para alunos.
-                </p>
               </div>
             )}
 
