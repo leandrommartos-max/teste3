@@ -290,7 +290,7 @@ export default function AdminTrainingCreate() {
                     Imagem de capa
                   </label>
 
-                  <label className="border-2 border-dashed border-border rounded-lg p-8 min-h-[240px] flex flex-col items-center justify-center text-center cursor-pointer">
+                  <label className="border-2 border-dashed border-border rounded-lg p-8 min-h-[360px] flex flex-col items-center justify-center text-center cursor-pointer">
                     <input
                       type="file"
                       accept="image/*"
