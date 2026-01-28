@@ -106,10 +106,21 @@ export const ProtectedRoute = ({
   if (!isSupabaseConfigured || !supabase) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-6 text-center">
-        <p className="text-muted-foreground">
-          Supabase não configurado. Verifique as variáveis de ambiente para
-          continuar.
-        </p>
+        <div className="max-w-md space-y-3">
+          <p className="text-muted-foreground">
+            Supabase não configurado. Verifique as variáveis de ambiente para continuar.
+          </p>
+          <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">Variáveis esperadas</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-left">
+              <li>VITE_SUPABASE_URL</li>
+              <li>VITE_SUPABASE_ANON_KEY</li>
+            </ul>
+            <p className="mt-2 text-left">
+              Após configurar no Vercel, publique novamente para aplicar.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
