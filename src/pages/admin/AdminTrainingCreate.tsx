@@ -6,12 +6,6 @@ import { ButtonRole } from "@/components/ui/button-role";
 import { InputField } from "@/components/ui/input-field";
 import { SelectField } from "@/components/ui/select-field";
 
-const categorias = [
-  { value: "seguranca", label: "Segurança" },
-  { value: "qualidade", label: "Qualidade" },
-  { value: "conformidade", label: "Conformidade" },
-];
-
 const gestores = [
   { value: "joao", label: "João Carlos" },
   { value: "maria", label: "Maria Santos" },
@@ -22,10 +16,6 @@ const versoes = [
   { value: "1.1", label: "v1.1" },
 ];
 
-const statusOptions = [
-  { value: "rascunho", label: "Rascunho" },
-  { value: "publicada", label: "Publicada" },
-];
 
 const instituicoes = [
   { value: "hospital_municipal", label: "Hospital Municipal" },
@@ -132,18 +122,13 @@ export default function AdminTrainingCreate() {
                   />
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <SelectField label="Categoria" options={categorias} placeholder="Selecione" />
+                  <SelectField label="Gestor de referência" options={gestores} placeholder="Selecione" />
                   <InputField label="Duração (minutos)" type="number" placeholder="45" />
                 </div>
-                <InputField label="Nome do instrutor" placeholder="Nome do instrutor responsável" />
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <SelectField label="Gestor de referência" options={gestores} placeholder="Selecione" />
+                  <InputField label="Nome do instrutor" placeholder="Nome do instrutor responsável" />
                   <SelectField label="Versão" options={versoes} placeholder="Selecione" />
                 </div>
-                <SelectField label="Status" options={statusOptions} placeholder="Selecione" />
-                <p className="text-sm text-muted-foreground">
-                  Capacitações em rascunho não são visíveis para alunos.
-                </p>
               </div>
             )}
 
@@ -152,7 +137,7 @@ export default function AdminTrainingCreate() {
                 <h3 className="font-display font-semibold text-foreground">Mídia</h3>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Imagem de capa</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 min-h-[240px] flex flex-col items-center justify-center text-center">
                     <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Clique ou arraste para enviar</p>
                   </div>
