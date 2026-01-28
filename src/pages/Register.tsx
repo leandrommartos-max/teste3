@@ -5,7 +5,7 @@ import { ButtonRole } from "@/components/ui/button-role";
 import { InputField } from "@/components/ui/input-field";
 import { SelectField } from "@/components/ui/select-field";
 import logoNep from "@/assets/logo-nep.jpg";
-import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 type Option = { value: string; label: string };
 

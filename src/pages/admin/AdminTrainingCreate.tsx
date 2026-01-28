@@ -5,7 +5,7 @@ import { TopbarSticky } from "@/components/global/TopbarSticky";
 import { ButtonRole } from "@/components/ui/button-role";
 import { InputField } from "@/components/ui/input-field";
 import { SelectField } from "@/components/ui/select-field";
-import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 const instituicoes = [
   { value: "hospital_municipal", label: "Hospital Municipal" },

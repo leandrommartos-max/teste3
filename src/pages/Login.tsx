@@ -4,7 +4,7 @@ import { GraduationCap, Shield, Users } from "lucide-react";
 import { ButtonRole } from "@/components/ui/button-role";
 import { InputField } from "@/components/ui/input-field";
 import logoNep from "@/assets/logo-nep.jpg";
-import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 export default function Login() {
   const navigate = useNavigate();

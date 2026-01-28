@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, History, User, HelpCircle, LogOut } from "lucide-react";
 import { TopbarSticky } from "@/components/global/TopbarSticky";
 import { FooterLight } from "@/components/global/FooterLight";
-import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
