@@ -7,17 +7,6 @@ import { InputField } from "@/components/ui/input-field";
 import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
 
-const gestores = [
-  { value: "joao", label: "João Carlos" },
-  { value: "maria", label: "Maria Santos" },
-];
-
-const versoes = [
-  { value: "1.0", label: "v1.0" },
-  { value: "1.1", label: "v1.1" },
-];
-
-
 const instituicoes = [
   { value: "hospital_municipal", label: "Hospital Municipal" },
 ];
@@ -52,6 +41,7 @@ const termosModelos = [
 ];
 
 const TRAININGS_TABLE = "capacitacoes";
+const PUBLISHED_TRAININGS_TABLE = "trainings";
 const STORAGE_BUCKET = "capacitacoes-assets";
 
 const tabs = [
@@ -169,6 +159,16 @@ export default function AdminTrainingCreate() {
         throw error;
       }
 
+      if (status === "published") {
+        const { error: publishError } = await supabase
+          .from(PUBLISHED_TRAININGS_TABLE)
+          .insert([{ "título": title }]);
+
+        if (publishError) {
+          throw publishError;
+        }
+      }
+
       navigate("/admin/capacitacoes");
     } catch (error) {
       const message =
@@ -252,12 +252,6 @@ export default function AdminTrainingCreate() {
                     value={version}
                     onChange={(event) => setVersion(event.target.value)}
                   />
-                  <SelectField label="Gestor de referência" options={gestores} placeholder="Selecione" />
-                  <InputField label="Duração (minutos)" type="number" placeholder="45" />
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <InputField label="Nome do instrutor" placeholder="Nome do instrutor responsável" />
-                  <SelectField label="Versão" options={versoes} placeholder="Selecione" />
                 </div>
               </div>
             )}
@@ -267,9 +261,6 @@ export default function AdminTrainingCreate() {
                 <h3 className="font-display font-semibold text-foreground">Mídia</h3>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Imagem de capa</label>
-<<<<<<< HEAD
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 min-h-[360px] flex flex-col items-center justify-center text-center">
-=======
                   <label className="border-2 border-dashed border-border rounded-lg p-8 min-h-[240px] flex flex-col items-center justify-center text-center cursor-pointer">
                     <input
                       type="file"
@@ -279,8 +270,6 @@ export default function AdminTrainingCreate() {
                         setCoverImageFile(event.target.files?.[0] ?? null)
                       }
                     />
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 min-h-[240px] flex flex-col items-center justify-center text-center">
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
                     <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Clique ou arraste para enviar</p>
                     {coverImageFile && (
@@ -306,12 +295,6 @@ export default function AdminTrainingCreate() {
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Público-alvo</h3>
                 <div className="grid sm:grid-cols-2 gap-4">
-<<<<<<< HEAD
-                  <SelectField label="Unidade" options={instituicoes} placeholder="Selecione" />
-                  <SelectField label="Setor" options={setores} placeholder="Todos" />
-                  <SelectField label="Categoria profissional" options={categoriasProf} placeholder="Todas" />
-                  <InputField label="Prazo de conclusão" type="date" />
-=======
                   <SelectField
                     label="Instituição"
                     options={instituicoes}
@@ -353,7 +336,6 @@ export default function AdminTrainingCreate() {
                     value={completionDeadline}
                     onChange={(event) => setCompletionDeadline(event.target.value)}
                   />
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
                 </div>
                 
                 <div className="space-y-2">
@@ -380,9 +362,6 @@ export default function AdminTrainingCreate() {
                     ))}
                   </div>
                 </div>
-<<<<<<< HEAD
-=======
-
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">
                     Mensagem aos colaboradores
@@ -394,7 +373,6 @@ export default function AdminTrainingCreate() {
                     onChange={(event) => setAudienceMessage(event.target.value)}
                   />
                 </div>
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
               </div>
             )}
 
@@ -449,16 +427,6 @@ export default function AdminTrainingCreate() {
                           </button>
                         )}
                       </div>
-<<<<<<< HEAD
-                      <InputField placeholder="Digite a pergunta..." />
-                      <InputField placeholder="Opção A" />
-                      <InputField placeholder="Opção B" />
-                      <InputField placeholder="Opção C" />
-                      <InputField placeholder="Opção D" />
-                      <InputField placeholder="Opção E" />
-                      <SelectField 
-                        label="Resposta correta" 
-=======
                       <InputField
                         placeholder="Digite a pergunta..."
                         value={q.question}
@@ -489,24 +457,16 @@ export default function AdminTrainingCreate() {
                       />
                       <SelectField
                         label="Resposta correta"
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
                         options={[
                           { value: "a", label: "Opção A" },
                           { value: "b", label: "Opção B" },
                           { value: "c", label: "Opção C" },
-<<<<<<< HEAD
-                          { value: "d", label: "Opção D" },
-                          { value: "e", label: "Opção E" },
-                        ]} 
-                        placeholder="Selecione" 
-=======
                         ]}
                         placeholder="Selecione"
                         value={q.correct}
                         onChange={(event) =>
                           handleQuestionChange(q.id, "correct", event.target.value)
                         }
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
                       />
                     </div>
                   ))}
@@ -517,15 +477,6 @@ export default function AdminTrainingCreate() {
             {activeTab === "term" && (
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Termo de ciência</h3>
-<<<<<<< HEAD
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Pré-visualização</label>
-                  <div className="flex items-center justify-center h-48 bg-muted rounded-lg p-4 overflow-y-auto">
-                    <p className="text-center text-sm text-muted-foreground">
-                      Elabore aqui o Termo de Ciência com validade institucional, que será assinado pelo participante após a capacitação.
-                    </p>
-                  </div>
-=======
                 <SelectField
                   label="Modelo de termo"
                   options={termosModelos}
@@ -541,7 +492,6 @@ export default function AdminTrainingCreate() {
                     value={termText}
                     onChange={(event) => setTermText(event.target.value)}
                   />
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
                 </div>
               </div>
             )}
@@ -557,15 +507,6 @@ export default function AdminTrainingCreate() {
                 )}
                 
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
-<<<<<<< HEAD
-                  <ButtonRole variant="outline" fullWidth onClick={handleSave}
-                  className="hover:bg-red-600 hover:text-white hover:border-red-600"
-                  >
-                    Cancelar
-                  </ButtonRole>
-                  <ButtonRole variant="admin" fullWidth onClick={handleSave}
-                  className="!bg-[#50B771] !border-[#50B771] !text-white hover:!bg-[#50B771]/90 hover:!border-[#50B771]"
-=======
                   <ButtonRole
                     variant="outline"
                     fullWidth
@@ -579,7 +520,6 @@ export default function AdminTrainingCreate() {
                     fullWidth
                     onClick={() => handleSave("published")}
                     disabled={isSaving}
->>>>>>> d9fcbe928e08e476f44c280697ab04d38b0d6ffe
                   >
                     Publicar
                   </ButtonRole>
