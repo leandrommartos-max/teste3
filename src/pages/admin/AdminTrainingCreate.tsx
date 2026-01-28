@@ -6,12 +6,6 @@ import { ButtonRole } from "@/components/ui/button-role";
 import { InputField } from "@/components/ui/input-field";
 import { SelectField } from "@/components/ui/select-field";
 
-const categorias = [
-  { value: "seguranca", label: "Segurança" },
-  { value: "qualidade", label: "Qualidade" },
-  { value: "conformidade", label: "Conformidade" },
-];
-
 const gestores = [
   { value: "joao", label: "João Carlos" },
   { value: "maria", label: "Maria Santos" },
@@ -132,12 +126,11 @@ export default function AdminTrainingCreate() {
                   />
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <SelectField label="Categoria" options={categorias} placeholder="Selecione" />
                   <InputField label="Duração (minutos)" type="number" placeholder="45" />
-                </div>
-                <InputField label="Nome do instrutor" placeholder="Nome do instrutor responsável" />
-                <div className="grid sm:grid-cols-2 gap-4">
                   <SelectField label="Gestor de referência" options={gestores} placeholder="Selecione" />
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <InputField label="Nome do instrutor" placeholder="Nome do instrutor responsável" />
                   <SelectField label="Versão" options={versoes} placeholder="Selecione" />
                 </div>
                 <SelectField label="Status" options={statusOptions} placeholder="Selecione" />
