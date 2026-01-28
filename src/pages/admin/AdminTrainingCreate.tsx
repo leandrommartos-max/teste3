@@ -124,6 +124,7 @@ export default function AdminTrainingCreate() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <SelectField label="Gestor de referência" options={gestores} placeholder="Selecione" />
                   <InputField label="Duração (minutos)" type="number" placeholder="45" />
+                  <SelectField label="Gestor de referência" options={gestores} placeholder="Selecione" />
                 </div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <InputField label="Nome do instrutor" placeholder="Nome do instrutor responsável" />
