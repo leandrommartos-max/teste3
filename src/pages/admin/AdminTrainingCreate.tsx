@@ -366,7 +366,6 @@ export default function AdminTrainingCreate() {
                         <span className="text-sm text-foreground">{opt.label}</span>
                       </label>
                     ))}
-                  </div>
                 </div>
                </div>
               </div>
