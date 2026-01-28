@@ -7,6 +7,17 @@ import { InputField } from "@/components/ui/input-field";
 import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
 
+const gestores = [
+  { value: "joao", label: "João Carlos" },
+  { value: "maria", label: "Maria Santos" },
+];
+
+const versoes = [
+  { value: "1.0", label: "v1.0" },
+  { value: "1.1", label: "v1.1" },
+];
+
+
 const instituicoes = [
   { value: "hospital_municipal", label: "Hospital Municipal" },
 ];
@@ -241,6 +252,12 @@ export default function AdminTrainingCreate() {
                     value={version}
                     onChange={(event) => setVersion(event.target.value)}
                   />
+                  <SelectField label="Gestor de referência" options={gestores} placeholder="Selecione" />
+                  <InputField label="Duração (minutos)" type="number" placeholder="45" />
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <InputField label="Nome do instrutor" placeholder="Nome do instrutor responsável" />
+                  <SelectField label="Versão" options={versoes} placeholder="Selecione" />
                 </div>
               </div>
             )}
@@ -259,6 +276,7 @@ export default function AdminTrainingCreate() {
                         setCoverImageFile(event.target.files?.[0] ?? null)
                       }
                     />
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 min-h-[240px] flex flex-col items-center justify-center text-center">
                     <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Clique ou arraste para enviar</p>
                     {coverImageFile && (
