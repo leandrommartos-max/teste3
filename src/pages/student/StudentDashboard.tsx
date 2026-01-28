@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, History, User, HelpCircle, LogOut } from "lucide-react";
 import { TopbarSticky } from "@/components/global/TopbarSticky";
 import { FooterLight } from "@/components/global/FooterLight";
-import { supabase } from "@/lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -11,6 +11,11 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     const loadUserProfile = async () => {
+      if (!isSupabaseConfigured || !supabase) {
+        setUserName("Configurar Supabase");
+        return;
+      }
+
       const {
         data: { user },
         error: userError,
@@ -40,6 +45,11 @@ export default function StudentDashboard() {
   }, [navigate]);
 
   const handleLogout = () => {
+    if (!supabase) {
+      navigate("/login");
+      return;
+    }
+
     supabase.auth.signOut().finally(() => {
       navigate("/login");
     });

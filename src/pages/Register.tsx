@@ -5,7 +5,7 @@ import { ButtonRole } from "@/components/ui/button-role";
 import { InputField } from "@/components/ui/input-field";
 import { SelectField } from "@/components/ui/select-field";
 import logoNep from "@/assets/logo-nep.jpg";
-import { supabase } from "@/lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 
 type Option = { value: string; label: string };
 
@@ -82,6 +82,10 @@ export default function Register() {
   // Carregar funções do Supabase
   useEffect(() => {
     const loadFuncoes = async () => {
+      if (!isSupabaseConfigured || !supabase) {
+        return;
+      }
+
       const { data, error } = await supabase.from("funcao").select("id, funcao");
 
       if (error) {
@@ -103,6 +107,10 @@ export default function Register() {
   // Carregar setores do Supabase
   useEffect(() => {
     const loadSetores = async () => {
+      if (!isSupabaseConfigured || !supabase) {
+        return;
+      }
+
       const { data, error } = await supabase.from("setor").select("id, setor");
 
       if (error) {
@@ -135,6 +143,11 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isSupabaseConfigured || !supabase) {
+      alert("Supabase não configurado. Verifique as variáveis de ambiente.");
+      return;
+    }
 
     if (!formData.email || !formData.novaSenha) {
       alert("Preencha email e senha");
@@ -437,4 +450,3 @@ export default function Register() {
     </div>
   );
 }
-

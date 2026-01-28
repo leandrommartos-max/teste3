@@ -4,7 +4,7 @@ import { GraduationCap, Shield, Users } from "lucide-react";
 import { ButtonRole } from "@/components/ui/button-role";
 import { InputField } from "@/components/ui/input-field";
 import logoNep from "@/assets/logo-nep.jpg";
-import { supabase } from "@/lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -15,6 +15,11 @@ export default function Login() {
   type DesiredRole = "student" | "admin" | "manager";
 
   const signInWithSupabase = async (desiredRole: DesiredRole) => {
+    if (!isSupabaseConfigured || !supabase) {
+      alert("Supabase não configurado. Verifique as variáveis de ambiente.");
+      return;
+    }
+
     if (!email || !password) {
       alert("Preencha e-mail e senha.");
       return;
