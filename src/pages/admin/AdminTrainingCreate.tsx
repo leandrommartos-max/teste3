@@ -54,7 +54,7 @@ const tabs = [
   { id: "basic", label: "Básico" },
   { id: "media", label: "Mídia" },
   { id: "audience", label: "Público-alvo" },
-  { id: "content", label: "Conteúdo" },
+  { id: "content", label: "Material Técnico de Referência" },
   { id: "quiz", label: "Avaliação" },
   { id: "term", label: "Termo" },
   { id: "publish", label: "Publicação" },
@@ -137,7 +137,7 @@ export default function AdminTrainingCreate() {
                 <h3 className="font-display font-semibold text-foreground">Mídia</h3>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Imagem de capa</label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 min-h-[240px] flex flex-col items-center justify-center text-center">
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 min-h-[360px] flex flex-col items-center justify-center text-center">
                     <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Clique ou arraste para enviar</p>
                   </div>
@@ -156,12 +156,10 @@ export default function AdminTrainingCreate() {
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Público-alvo</h3>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <SelectField label="Instituição" options={instituicoes} placeholder="Selecione" />
+                  <SelectField label="Unidade" options={instituicoes} placeholder="Selecione" />
                   <SelectField label="Setor" options={setores} placeholder="Todos" />
                   <SelectField label="Categoria profissional" options={categoriasProf} placeholder="Todas" />
-                  <SelectField label="Função" options={funcoes} placeholder="Todas" />
-                  <SelectField label="Vínculo" options={vinculos} placeholder="Todos" />
-                  <InputField label="Prazo para conclusão" type="date" />
+                  <InputField label="Prazo de conclusão" type="date" />
                 </div>
                 
                 <div className="space-y-2">
@@ -182,16 +180,6 @@ export default function AdminTrainingCreate() {
                     ))}
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Mensagem aos colaboradores
-                  </label>
-                  <textarea 
-                    className="input-institutional min-h-20 resize-none" 
-                    placeholder="Mensagem opcional para os colaboradores..."
-                  />
-                </div>
               </div>
             )}
 
@@ -204,18 +192,6 @@ export default function AdminTrainingCreate() {
                   <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
                     <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Clique ou arraste para enviar</p>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-muted rounded-lg">
-                  <h4 className="font-medium text-foreground mb-2">Versões do documento</h4>
-                  <p className="text-sm text-muted-foreground">Nenhum documento enviado ainda.</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Pré-visualização do vídeo</label>
-                  <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground text-sm">Nenhum vídeo configurado</p>
                   </div>
                 </div>
               </div>
@@ -249,12 +225,16 @@ export default function AdminTrainingCreate() {
                       <InputField placeholder="Opção A" />
                       <InputField placeholder="Opção B" />
                       <InputField placeholder="Opção C" />
+                      <InputField placeholder="Opção D" />
+                      <InputField placeholder="Opção E" />
                       <SelectField 
                         label="Resposta correta" 
                         options={[
                           { value: "a", label: "Opção A" },
                           { value: "b", label: "Opção B" },
                           { value: "c", label: "Opção C" },
+                          { value: "d", label: "Opção D" },
+                          { value: "e", label: "Opção E" },
                         ]} 
                         placeholder="Selecione" 
                       />
@@ -267,16 +247,11 @@ export default function AdminTrainingCreate() {
             {activeTab === "term" && (
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Termo de ciência</h3>
-                <SelectField 
-                  label="Modelo de termo" 
-                  options={termosModelos} 
-                  placeholder="Selecione um modelo" 
-                />
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">Pré-visualização</label>
-                  <div className="h-48 bg-muted rounded-lg p-4 overflow-y-auto">
-                    <p className="text-sm text-muted-foreground">
-                      Selecione um modelo para pré-visualizar o termo.
+                  <div className="flex items-center justify-center h-48 bg-muted rounded-lg p-4 overflow-y-auto">
+                    <p className="text-center text-sm text-muted-foreground">
+                      Elabore aqui o Termo de Ciência com validade institucional, que será assinado pelo participante após a capacitação.
                     </p>
                   </div>
                 </div>
@@ -291,17 +266,17 @@ export default function AdminTrainingCreate() {
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                  <ButtonRole variant="outline" fullWidth onClick={handleSave}>
-                    Salvar rascunho
+                  <ButtonRole variant="outline" fullWidth onClick={handleSave}
+                  className="hover:bg-red-600 hover:text-white hover:border-red-600"
+                  >
+                    Cancelar
                   </ButtonRole>
-                  <ButtonRole variant="admin" fullWidth onClick={handleSave}>
+                  <ButtonRole variant="admin" fullWidth onClick={handleSave}
+                  className="!bg-[#50B771] !border-[#50B771] !text-white hover:!bg-[#50B771]/90 hover:!border-[#50B771]"
+                  >
                     Publicar
                   </ButtonRole>
                 </div>
-                
-                <ButtonRole variant="ghost" fullWidth onClick={() => navigate("/admin/capacitacoes")}>
-                  Cancelar
-                </ButtonRole>
               </div>
             )}
           </div>
