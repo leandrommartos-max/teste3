@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, Upload } from "lucide-react";
 import { TopbarSticky } from "@/components/global/TopbarSticky";
@@ -43,6 +43,7 @@ const termosModelos = [
 const TRAININGS_TABLE = "capacitacoes";
 const PUBLISHED_TRAININGS_TABLE = "trainings";
 const STORAGE_BUCKET = "capacitacoes-assets";
+const TITLE_STORAGE_KEY = "admin-training-title";
 
 const tabs = [
   { id: "basic", label: "Básico" },
@@ -82,6 +83,17 @@ export default function AdminTrainingCreate() {
   const [questions, setQuestions] = useState([
     { id: 1, question: "", optionA: "", optionB: "", optionC: "", correct: "" },
   ]);
+
+  useEffect(() => {
+    const storedTitle = sessionStorage.getItem(TITLE_STORAGE_KEY);
+    if (storedTitle) {
+      setTitle(storedTitle);
+    }
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem(TITLE_STORAGE_KEY, title);
+  }, [title]);
 
   const addQuestion = () => {
     setQuestions([
@@ -167,6 +179,8 @@ export default function AdminTrainingCreate() {
         if (publishError) {
           throw publishError;
         }
+
+        sessionStorage.removeItem(TITLE_STORAGE_KEY);
       }
 
       navigate("/admin/capacitacoes");
