@@ -7,11 +7,6 @@ import { InputField } from "@/components/ui/input-field";
 import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
 
-const gestores = [
-  { value: "joao", label: "João Carlos" },
-  { value: "maria", label: "Maria Santos" },
-];
-
 const versoes = [
   { value: "1.0", label: "v1.0" },
   { value: "1.1", label: "v1.1" },
@@ -249,10 +244,10 @@ export default function AdminTrainingCreate() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <SelectField
+                  <InputField
                     label="Gestor de referência"
-                    options={gestores}
-                    placeholder="Selecione"
+                    type="text"
+                    placeholder="Nome do Coordenador"
                     value={referenceManager}
                     onChange={(event) => setReferenceManager(event.target.value)}
                   />
