@@ -18,11 +18,7 @@ const setores = [
   { value: "pronto_atendimento", label: "Pronto Atendimento" },
 ];
 
-const categoriasProf = [
-  { value: "", label: "Todas as categorias" },
-  { value: "assistencial", label: "Assistencial" },
-  { value: "administrativo", label: "Administrativo" },
-];
+const FUNCTIONS_TABLE = "funcao";
 
 const termosModelos = [
   { value: "padrao", label: "Termo padrão" },
@@ -92,6 +88,9 @@ export default function AdminTrainingCreate() {
   >([]);
   const [isInstitutionLoading, setIsInstitutionLoading] = useState(false);
   const [institutionLoadError, setInstitutionLoadError] = useState<string | null>(null);
+  const [functionOptions, setFunctionOptions] = useState<{ value: string; label: string }[]>([]);
+  const [isFunctionLoading, setIsFunctionLoading] = useState(false);
+  const [functionLoadError, setFunctionLoadError] = useState<string | null>(null);
 
   // Quiz
   const [questions, setQuestions] = useState<QuizQuestion[]>([
@@ -142,6 +141,52 @@ export default function AdminTrainingCreate() {
     };
 
     fetchInstitutions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hasSupabaseConfig]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchFunctions = async () => {
+      setIsFunctionLoading(true);
+      setFunctionLoadError(null);
+
+      if (!hasSupabaseConfig) {
+        if (!isMounted) return;
+        setFunctionLoadError("Configuração do Supabase ausente.");
+        setFunctionOptions([]);
+        setIsFunctionLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from(FUNCTIONS_TABLE)
+        .select("funcao_sem_especialidade")
+        .order("funcao_sem_especialidade", { ascending: true });
+
+      if (!isMounted) return;
+
+      if (error) {
+        setFunctionLoadError("Não foi possível carregar as funções.");
+        setFunctionOptions([]);
+        setIsFunctionLoading(false);
+        return;
+      }
+
+      const options =
+        data
+          ?.map((item) => item.funcao_sem_especialidade?.trim())
+          .filter((funcao): funcao is string => Boolean(funcao))
+          .map((funcao) => ({ value: funcao, label: funcao })) ?? [];
+
+      setFunctionOptions([{ value: "", label: "Todas as categorias" }, ...options]);
+      setIsFunctionLoading(false);
+    };
+
+    fetchFunctions();
 
     return () => {
       isMounted = false;
@@ -449,10 +494,12 @@ export default function AdminTrainingCreate() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <SelectField
                       label="Categoria profissional"
-                      options={categoriasProf}
+                      options={functionOptions}
                       placeholder="Todas"
                       value={professionalCategory}
                       onChange={(event) => setProfessionalCategory(event.target.value)}
+                      disabled={isFunctionLoading}
+                      error={functionLoadError ?? undefined}
                     />
                     <InputField
                       label="Prazo para conclusão"
