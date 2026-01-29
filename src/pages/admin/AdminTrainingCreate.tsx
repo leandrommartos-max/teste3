@@ -370,9 +370,32 @@ export default function AdminTrainingCreate() {
                     error={institutionLoadError ?? undefined}
                     multiple
                     size={1}
+                    value={institution}
+                    onChange={(event) =>
+                      setInstitution(
+                        Array.from(event.target.selectedOptions, (option) => option.value)
+                      )
+                    }
+                    disabled={isInstitutionLoading}
+                    error={institutionLoadError ?? undefined}
+                    multiple
+                    value={institution}
+                    onChange={(event) =>
+                      setInstitution(
+                        Array.from(event.target.selectedOptions, (option) => option.value)
+                      )
+                    }
+                    disabled={isInstitutionLoading}
+                    error={institutionLoadError ?? undefined}
+                    multiple
+                    placeholder={isInstitutionLoading ? "Carregando..." : "Selecione"}
+                    value={institution}
+                    onChange={(event) => setInstitution(event.target.value)}
+                    disabled={isInstitutionLoading}
+                    error={institutionLoadError ?? undefined}
                   />
                   <SelectField
-                    label="Setor"
+                    label="Setor (HMP)"
                     options={setores}
                     placeholder="Todos"
                     value={sector}
