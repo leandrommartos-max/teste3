@@ -645,15 +645,6 @@ export default function AdminTrainingCreate() {
                   </ButtonRole>
 
                   <ButtonRole
-                    variant="outline"
-                    fullWidth
-                    onClick={() => handleSave("draft")}
-                    disabled={isSaving}
-                  >
-                    Salvar rascunho
-                  </ButtonRole>
-
-                  <ButtonRole
                     variant="admin"
                     fullWidth
                     onClick={() => handleSave("published")}
