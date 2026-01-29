@@ -612,9 +612,6 @@ export default function AdminTrainingCreate() {
                 <h3 className="font-display font-semibold text-foreground">Termo de ciência</h3>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Texto do termo
-                  </label>
                   <textarea
                     className="input-institutional min-h-32 resize-none"
                     placeholder="Digite o termo de ciência..."
