@@ -24,7 +24,12 @@ const categoriasProf = [
   { value: "administrativo", label: "Administrativo" },
 ];
 
-const TRAININGS_TABLE = "capacitacoes";
+const termosModelos = [
+  { value: "padrao", label: "Termo padrão" },
+  { value: "nr32", label: "Termo NR-32" },
+];
+
+const TRAININGS_TABLE = "trainings";
 const STORAGE_BUCKET = "capacitacoes-assets";
 
 const tabs = [
