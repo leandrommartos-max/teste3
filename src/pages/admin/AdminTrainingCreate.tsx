@@ -369,6 +369,16 @@ export default function AdminTrainingCreate() {
                     disabled={isInstitutionLoading}
                     error={institutionLoadError ?? undefined}
                     multiple
+                    size={1}
+                    value={institution}
+                    onChange={(event) =>
+                      setInstitution(
+                        Array.from(event.target.selectedOptions, (option) => option.value)
+                      )
+                    }
+                    disabled={isInstitutionLoading}
+                    error={institutionLoadError ?? undefined}
+                    multiple
                     value={institution}
                     onChange={(event) =>
                       setInstitution(
