@@ -118,7 +118,7 @@ export default function AdminTrainingCreate() {
 
       const { data, error } = await supabase
         .from(INSTITUTIONS_TABLE)
-        .select("setor_sem_detalhe")
+        .select("setor_sem_detalhe", { distinct: true })
         .order("setor_sem_detalhe", { ascending: true });
 
       if (!isMounted) return;
