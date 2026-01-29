@@ -369,6 +369,7 @@ export default function AdminTrainingCreate() {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <Popover>
+                    <div className="space-y-1.5 sm:col-span-2">
                     <div className="space-y-1.5">
                       <label className="block text-sm font-medium text-foreground">Local</label>
                       <PopoverTrigger asChild>
