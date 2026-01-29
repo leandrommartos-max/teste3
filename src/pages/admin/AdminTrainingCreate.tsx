@@ -357,7 +357,7 @@ export default function AdminTrainingCreate() {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <SelectField
-                    label="Instituição"
+                    label="Local"
                     options={institutionOptions}
                     placeholder={isInstitutionLoading ? "Carregando..." : undefined}
                     value={institution}
@@ -376,7 +376,7 @@ export default function AdminTrainingCreate() {
                     error={institutionLoadError ?? undefined}
                   />
                   <SelectField
-                    label="Setor"
+                    label="Setor (HMP)"
                     options={setores}
                     placeholder="Todos"
                     value={sector}
