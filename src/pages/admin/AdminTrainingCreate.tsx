@@ -103,12 +103,24 @@ export default function AdminTrainingCreate() {
     { id: 1, question: "", optionA: "", optionB: "", optionC: "", correct: "" },
   ]);
 
+  const hasSupabaseConfig = Boolean(
+    import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
+  );
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchInstitutions = async () => {
       setIsInstitutionLoading(true);
       setInstitutionLoadError(null);
+
+      if (!hasSupabaseConfig) {
+        if (!isMounted) return;
+        setInstitutionLoadError("Configuração do Supabase ausente.");
+        setInstitutionOptions([]);
+        setIsInstitutionLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from(INSTITUTIONS_TABLE)
@@ -139,6 +151,7 @@ export default function AdminTrainingCreate() {
     return () => {
       isMounted = false;
     };
+  }, [hasSupabaseConfig]);
   }, []);
 
   const addQuestion = () => {
@@ -427,44 +440,6 @@ export default function AdminTrainingCreate() {
                       )}
                     </div>
                   </Popover>
-                  <SelectField
-                    label="Local"
-                    options={institutionOptions}
-                    placeholder={isInstitutionLoading ? "Carregando..." : undefined}
-                    value={institution}
-                    onChange={(event) =>
-                      setInstitution(
-                        Array.from(event.target.selectedOptions, (option) => option.value)
-                      )
-                    }
-                    disabled={isInstitutionLoading}
-                    error={institutionLoadError ?? undefined}
-                    multiple
-                    size={1}
-                    value={institution}
-                    onChange={(event) =>
-                      setInstitution(
-                        Array.from(event.target.selectedOptions, (option) => option.value)
-                      )
-                    }
-                    disabled={isInstitutionLoading}
-                    error={institutionLoadError ?? undefined}
-                    multiple
-                    value={institution}
-                    onChange={(event) =>
-                      setInstitution(
-                        Array.from(event.target.selectedOptions, (option) => option.value)
-                      )
-                    }
-                    disabled={isInstitutionLoading}
-                    error={institutionLoadError ?? undefined}
-                    multiple
-                    placeholder={isInstitutionLoading ? "Carregando..." : "Selecione"}
-                    value={institution}
-                    onChange={(event) => setInstitution(event.target.value)}
-                    disabled={isInstitutionLoading}
-                    error={institutionLoadError ?? undefined}
-                  />
                   <SelectField
                     label="Setor (HMP)"
                     options={setores}
