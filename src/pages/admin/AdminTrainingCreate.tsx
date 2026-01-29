@@ -305,7 +305,9 @@ export default function AdminTrainingCreate() {
                     value={referenceManager}
                     onChange={(event) => setReferenceManager(event.target.value)}
                   />
-
+                </div>
+                
+                <div className="grid sm:grid-cols-2 gap-4">
                   <InputField
                     label="Duração (minutos)"
                     type="number"
