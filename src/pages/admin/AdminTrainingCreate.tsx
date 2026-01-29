@@ -7,9 +7,7 @@ import { InputField } from "@/components/ui/input-field";
 import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
 
-const instituicoes = [
-  { value: "hospital_municipal", label: "Hospital Municipal" },
-];
+const INSTITUTIONS_TABLE = "local_lotacao";
 
 const setores = [
   { value: "", label: "Todos os setores" },
@@ -79,6 +77,10 @@ export default function AdminTrainingCreate() {
   const [termText, setTermText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [institutionOptions, setInstitutionOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [institutionError, setInstitutionError] = useState<string | null>(null);
 
   const [questions, setQuestions] = useState([
     { id: 1, question: "", optionA: "", optionB: "", optionC: "", correct: "" },
@@ -94,6 +96,41 @@ export default function AdminTrainingCreate() {
   useEffect(() => {
     sessionStorage.setItem(TITLE_STORAGE_KEY, title);
   }, [title]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchInstitutions = async () => {
+      setInstitutionError(null);
+      const { data, error } = await supabase
+        .from(INSTITUTIONS_TABLE)
+        .select("local")
+        .order("local", { ascending: true });
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (error) {
+        setInstitutionError("Não foi possível carregar as instituições.");
+        return;
+      }
+
+      const options =
+        data
+          ?.map((item) => item.local)
+          .filter((local): local is string => Boolean(local?.trim()))
+          .map((local) => ({ value: local, label: local })) ?? [];
+
+      setInstitutionOptions(options);
+    };
+
+    fetchInstitutions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const addQuestion = () => {
     setQuestions([
@@ -311,11 +348,16 @@ export default function AdminTrainingCreate() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <SelectField
                     label="Instituição"
-                    options={instituicoes}
+                    options={institutionOptions}
                     placeholder="Selecione"
                     value={institution}
                     onChange={(event) => setInstitution(event.target.value)}
                   />
+                  {institutionError && (
+                    <p className="text-xs text-destructive sm:col-span-2">
+                      {institutionError}
+                    </p>
+                  )}
                   <SelectField
                     label="Setor"
                     options={setores}
