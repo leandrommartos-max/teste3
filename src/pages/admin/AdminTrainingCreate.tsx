@@ -173,8 +173,17 @@ export default function AdminTrainingCreate() {
     );
   };
 
-  const institutionLabel =
-    institution.length === 0 ? "0 seleções" : `${institution.length} seleções`;
+  const institutionLabel = (() => {
+    if (institution.length === 0) return "0 seleções";
+    if (institution.length === 1) {
+      const singleInstitution = institution[0];
+      return (
+        institutionOptions.find((option) => option.value === singleInstitution)?.label ??
+        singleInstitution
+      );
+    }
+    return `${institution.length} seleções`;
+  })();
 
   const removeQuestion = (id: number) => {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
