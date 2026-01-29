@@ -12,12 +12,6 @@ import { cn } from "@/lib/utils";
 
 const INSTITUTIONS_TABLE = "lk_setor";
 
-const setores = [
-  { value: "", label: "Todos os setores" },
-  { value: "uti", label: "UTI" },
-  { value: "pronto_atendimento", label: "Pronto Atendimento" },
-];
-
 const FUNCTIONS_TABLE = "lk_funcao";
 
 const termosModelos = [
@@ -91,6 +85,11 @@ export default function AdminTrainingCreate() {
   const [functionOptions, setFunctionOptions] = useState<{ value: string; label: string }[]>([]);
   const [isFunctionLoading, setIsFunctionLoading] = useState(false);
   const [functionLoadError, setFunctionLoadError] = useState<string | null>(null);
+  const [sectorOptions, setSectorOptions] = useState<{ value: string; label: string }[]>([
+    { value: "", label: "Todos os setores" },
+  ]);
+  const [isSectorLoading, setIsSectorLoading] = useState(false);
+  const [sectorLoadError, setSectorLoadError] = useState<string | null>(null);
 
   // Quiz
   const [questions, setQuestions] = useState<QuizQuestion[]>([
@@ -144,6 +143,57 @@ export default function AdminTrainingCreate() {
     };
 
     fetchInstitutions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hasSupabaseConfig]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchSectors = async () => {
+      setIsSectorLoading(true);
+      setSectorLoadError(null);
+
+      if (!hasSupabaseConfig) {
+        if (!isMounted) return;
+        setSectorLoadError("Configuração do Supabase ausente.");
+        setSectorOptions([{ value: "", label: "Todos os setores" }]);
+        setIsSectorLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from(INSTITUTIONS_TABLE)
+        .select("setor")
+        .order("setor", { ascending: true });
+
+      if (!isMounted) return;
+
+      if (error) {
+        setSectorLoadError("Não foi possível carregar os setores.");
+        setSectorOptions([{ value: "", label: "Todos os setores" }]);
+        setIsSectorLoading(false);
+        return;
+      }
+
+      const filteredSectors = Array.from(
+        new Set(
+          data
+            ?.map((item) => item.setor?.trim())
+            .filter((setor): setor is string => Boolean(setor))
+            .filter((setor) => setor.toLowerCase().includes("hmp")) ?? []
+        )
+      );
+
+      const options = filteredSectors.map((setor) => ({ value: setor, label: setor }));
+
+      setSectorOptions([{ value: "", label: "Todos os setores" }, ...options]);
+      setIsSectorLoading(false);
+    };
+
+    fetchSectors();
 
     return () => {
       isMounted = false;
@@ -508,10 +558,12 @@ export default function AdminTrainingCreate() {
                     </Popover>
                     <SelectField
                       label="Setor (HMP)"
-                      options={setores}
+                      options={sectorOptions}
                       placeholder="Todos"
                       value={sector}
                       onChange={(event) => setSector(event.target.value)}
+                      disabled={isSectorLoading}
+                      error={sectorLoadError ?? undefined}
                     />
                   </div>
 
