@@ -82,7 +82,7 @@ export default function Register() {
   // Carregar funções do Supabase
   useEffect(() => {
     const loadFuncoes = async () => {
-      const { data, error } = await supabase.from("funcao").select("id, funcao");
+      const { data, error } = await supabase.from("lk_funcao").select("id, funcao");
 
       if (error) {
         console.error("Erro ao carregar funções:", error);
@@ -437,4 +437,3 @@ export default function Register() {
     </div>
   );
 }
-

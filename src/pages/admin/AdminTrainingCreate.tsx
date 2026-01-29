@@ -18,7 +18,7 @@ const setores = [
   { value: "pronto_atendimento", label: "Pronto Atendimento" },
 ];
 
-const FUNCTIONS_TABLE = "funcao";
+const FUNCTIONS_TABLE = "lk_funcao";
 
 const termosModelos = [
   { value: "padrao", label: "Termo padrão" },
