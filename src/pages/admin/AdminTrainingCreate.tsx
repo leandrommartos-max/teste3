@@ -70,7 +70,7 @@ export default function AdminTrainingCreate() {
   const [videoLink, setVideoLink] = useState("");
 
   // Audience
-  const [institution, setInstitution] = useState("");
+  const [institution, setInstitution] = useState<string[]>([]);
   const [sector, setSector] = useState("");
   const [professionalCategory, setProfessionalCategory] = useState("");
   const [roleFunction, setRoleFunction] = useState("");
@@ -359,6 +359,16 @@ export default function AdminTrainingCreate() {
                   <SelectField
                     label="Instituição"
                     options={institutionOptions}
+                    placeholder={isInstitutionLoading ? "Carregando..." : undefined}
+                    value={institution}
+                    onChange={(event) =>
+                      setInstitution(
+                        Array.from(event.target.selectedOptions, (option) => option.value)
+                      )
+                    }
+                    disabled={isInstitutionLoading}
+                    error={institutionLoadError ?? undefined}
+                    multiple
                     placeholder={isInstitutionLoading ? "Carregando..." : "Selecione"}
                     value={institution}
                     onChange={(event) => setInstitution(event.target.value)}
