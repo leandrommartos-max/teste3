@@ -10,7 +10,7 @@ import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
 
-const INSTITUTIONS_TABLE = "local_lotacao";
+const INSTITUTIONS_TABLE = "setor";
 
 const setores = [
   { value: "", label: "Todos os setores" },
@@ -118,8 +118,8 @@ export default function AdminTrainingCreate() {
 
       const { data, error } = await supabase
         .from(INSTITUTIONS_TABLE)
-        .select("local")
-        .order("local", { ascending: true });
+        .select("setor_sem_detalhe")
+        .order("setor_sem_detalhe", { ascending: true });
 
       if (!isMounted) return;
 
@@ -132,7 +132,7 @@ export default function AdminTrainingCreate() {
 
       const options =
         data
-          ?.map((item) => item.local?.trim())
+          ?.map((item) => item.setor_sem_detalhe?.trim())
           .filter((local): local is string => Boolean(local))
           .map((local) => ({ value: local, label: local })) ?? [];
 
