@@ -173,8 +173,17 @@ export default function AdminTrainingCreate() {
     );
   };
 
-  const institutionLabel =
-    institution.length === 0 ? "0 seleções" : `${institution.length} seleções`;
+  const institutionLabel = (() => {
+    if (institution.length === 0) return "0 seleções";
+    if (institution.length === 1) {
+      const singleInstitution = institution[0];
+      return (
+        institutionOptions.find((option) => option.value === singleInstitution)?.label ??
+        singleInstitution
+      );
+    }
+    return `${institution.length} seleções`;
+  })();
 
   const removeQuestion = (id: number) => {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
@@ -379,86 +388,93 @@ export default function AdminTrainingCreate() {
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Público-alvo</h3>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <Popover>
-                    <div className="space-y-1.5 sm:col-span-2">
-                      <label className="block text-sm font-medium text-foreground">Local</label>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={isInstitutionLoading}
-                          className={cn(
-                            "input-institutional flex items-center justify-between text-left",
-                            isInstitutionLoading && "opacity-60 cursor-not-allowed"
-                          )}
-                        >
-                          <span
+                <div className="space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <Popover>
+                      <div className="space-y-1.5">
+                        <label className="block text-sm font-medium text-foreground">Local</label>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={isInstitutionLoading}
                             className={cn(
-                              "text-sm",
-                              institution.length === 0 ? "text-muted-foreground" : "text-foreground"
+                              "input-institutional flex items-center justify-between text-left",
+                              isInstitutionLoading && "opacity-60 cursor-not-allowed"
                             )}
                           >
-                            {isInstitutionLoading ? "Carregando..." : institutionLabel}
-                          </span>
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      </PopoverTrigger>
-                      
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
-                        {institutionOptions.length > 0 ? (
-                          <div className="max-h-60 space-y-2 overflow-auto">
-                            {institutionOptions.map((option) => {
-                              const isChecked = institution.includes(option.value);
-                              const optionId = `local-option-${option.value.replace(/\s+/g, "-")}`;
-                              return (
-                                <label
-                                  key={option.value}
-                                  htmlFor={optionId}
-                                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted/50"
-                                >
-                                  <Checkbox
-                                    id={optionId}
-                                    checked={isChecked}
-                                    onCheckedChange={(checked) =>
-                                      handleInstitutionToggle(option.value, checked === true)
-                                    }
-                                  />
-                                  <span>{option.label}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <p className="px-2 py-1 text-sm text-muted-foreground">
-                            Nenhum local disponível.
-                          </p>
+                            <span
+                              className={cn(
+                                "text-sm",
+                                institution.length === 0
+                                  ? "text-muted-foreground"
+                                  : "text-foreground"
+                              )}
+                            >
+                              {isInstitutionLoading ? "Carregando..." : institutionLabel}
+                            </span>
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </PopoverTrigger>
+
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
+                          {institutionOptions.length > 0 ? (
+                            <div className="max-h-60 space-y-2 overflow-auto">
+                              {institutionOptions.map((option) => {
+                                const isChecked = institution.includes(option.value);
+                                const optionId = `local-option-${option.value.replace(/\s+/g, "-")}`;
+                                return (
+                                  <label
+                                    key={option.value}
+                                    htmlFor={optionId}
+                                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted/50"
+                                  >
+                                    <Checkbox
+                                      id={optionId}
+                                      checked={isChecked}
+                                      onCheckedChange={(checked) =>
+                                        handleInstitutionToggle(option.value, checked === true)
+                                      }
+                                    />
+                                    <span>{option.label}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="px-2 py-1 text-sm text-muted-foreground">
+                              Nenhum local disponível.
+                            </p>
+                          )}
+                        </PopoverContent>
+                        {institutionLoadError && (
+                          <p className="text-sm text-destructive">{institutionLoadError}</p>
                         )}
-                      </PopoverContent>
-                      {institutionLoadError && (
-                        <p className="text-sm text-destructive">{institutionLoadError}</p>
-                      )}
-                    </div>
-                  </Popover>
-                  <SelectField
-                    label="Setor (HMP)"
-                    options={setores}
-                    placeholder="Todos"
-                    value={sector}
-                    onChange={(event) => setSector(event.target.value)}
-                  />
-                  <SelectField
-                    label="Categoria profissional"
-                    options={categoriasProf}
-                    placeholder="Todas"
-                    value={professionalCategory}
-                    onChange={(event) => setProfessionalCategory(event.target.value)}
-                  />
-                  <InputField
-                    label="Prazo para conclusão"
-                    type="date"
-                    value={completionDeadline}
-                    onChange={(event) => setCompletionDeadline(event.target.value)}
-                  />
+                      </div>
+                    </Popover>
+                    <SelectField
+                      label="Setor (HMP)"
+                      options={setores}
+                      placeholder="Todos"
+                      value={sector}
+                      onChange={(event) => setSector(event.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <SelectField
+                      label="Categoria profissional"
+                      options={categoriasProf}
+                      placeholder="Todas"
+                      value={professionalCategory}
+                      onChange={(event) => setProfessionalCategory(event.target.value)}
+                    />
+                    <InputField
+                      label="Prazo para conclusão"
+                      type="date"
+                      value={completionDeadline}
+                      onChange={(event) => setCompletionDeadline(event.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
