@@ -152,7 +152,6 @@ export default function AdminTrainingCreate() {
       isMounted = false;
     };
   }, [hasSupabaseConfig]);
-  }, []);
 
   const addQuestion = () => {
     setQuestions((prev) => [
@@ -383,7 +382,6 @@ export default function AdminTrainingCreate() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <Popover>
                     <div className="space-y-1.5 sm:col-span-2">
-                    <div className="space-y-1.5">
                       <label className="block text-sm font-medium text-foreground">Local</label>
                       <PopoverTrigger asChild>
                         <button
@@ -405,6 +403,7 @@ export default function AdminTrainingCreate() {
                           <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         </button>
                       </PopoverTrigger>
+                      
                       <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
                         {institutionOptions.length > 0 ? (
                           <div className="max-h-60 space-y-2 overflow-auto">
