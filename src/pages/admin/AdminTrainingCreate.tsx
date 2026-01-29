@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { ChevronDown, Plus, Trash2, Upload } from "lucide-react";
 import { TopbarSticky } from "@/components/global/TopbarSticky";
 import { ButtonRole } from "@/components/ui/button-role";
+import { Checkbox } from "@/components/ui/checkbox";
 import { InputField } from "@/components/ui/input-field";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
+import { cn } from "@/lib/utils";
 
 const versoes = [
   { value: "1.0", label: "v1.0" },
@@ -151,6 +154,15 @@ export default function AdminTrainingCreate() {
       },
     ]);
   };
+
+  const handleInstitutionToggle = (value: string, checked: boolean) => {
+    setInstitution((prev) =>
+      checked ? [...prev, value] : prev.filter((item) => item !== value)
+    );
+  };
+
+  const institutionLabel =
+    institution.length === 0 ? "0 seleções" : `${institution.length} seleções`;
 
   const removeQuestion = (id: number) => {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
@@ -356,6 +368,64 @@ export default function AdminTrainingCreate() {
                 <h3 className="font-display font-semibold text-foreground">Público-alvo</h3>
 
                 <div className="grid sm:grid-cols-2 gap-4">
+                  <Popover>
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium text-foreground">Local</label>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={isInstitutionLoading}
+                          className={cn(
+                            "input-institutional flex items-center justify-between text-left",
+                            isInstitutionLoading && "opacity-60 cursor-not-allowed"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "text-sm",
+                              institution.length === 0 ? "text-muted-foreground" : "text-foreground"
+                            )}
+                          >
+                            {isInstitutionLoading ? "Carregando..." : institutionLabel}
+                          </span>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
+                        {institutionOptions.length > 0 ? (
+                          <div className="max-h-60 space-y-2 overflow-auto">
+                            {institutionOptions.map((option) => {
+                              const isChecked = institution.includes(option.value);
+                              const optionId = `local-option-${option.value.replace(/\s+/g, "-")}`;
+                              return (
+                                <label
+                                  key={option.value}
+                                  htmlFor={optionId}
+                                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted/50"
+                                >
+                                  <Checkbox
+                                    id={optionId}
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) =>
+                                      handleInstitutionToggle(option.value, checked === true)
+                                    }
+                                  />
+                                  <span>{option.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="px-2 py-1 text-sm text-muted-foreground">
+                            Nenhum local disponível.
+                          </p>
+                        )}
+                      </PopoverContent>
+                      {institutionLoadError && (
+                        <p className="text-sm text-destructive">{institutionLoadError}</p>
+                      )}
+                    </div>
+                  </Popover>
                   <SelectField
                     label="Local"
                     options={institutionOptions}
