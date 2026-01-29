@@ -164,7 +164,7 @@ export default function AdminTrainingCreate() {
 
       const { data, error } = await supabase
         .from(FUNCTIONS_TABLE)
-        .select("funcao_sem_especialidade")
+        .select("funcao_sem_especialidade", { distinct: true })
         .order("funcao_sem_especialidade", { ascending: true });
 
       if (!isMounted) return;
@@ -176,11 +176,14 @@ export default function AdminTrainingCreate() {
         return;
       }
 
-      const options =
-        data
-          ?.map((item) => item.funcao_sem_especialidade?.trim())
-          .filter((funcao): funcao is string => Boolean(funcao))
-          .map((funcao) => ({ value: funcao, label: funcao })) ?? [];
+      const uniqueFunctions = Array.from(
+        new Set(
+          data
+            ?.map((item) => item.funcao_sem_especialidade?.trim())
+            .filter((funcao): funcao is string => Boolean(funcao)) ?? []
+        )
+      );
+      const options = uniqueFunctions.map((funcao) => ({ value: funcao, label: funcao }));
 
       setFunctionOptions([{ value: "", label: "Todas as categorias" }, ...options]);
       setIsFunctionLoading(false);
