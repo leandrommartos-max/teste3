@@ -10,11 +10,6 @@ import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
 
-const versoes = [
-  { value: "1.0", label: "v1.0" },
-  { value: "1.1", label: "v1.1" },
-];
-
 const INSTITUTIONS_TABLE = "local_lotacao";
 
 const setores = [
@@ -307,7 +302,6 @@ export default function AdminTrainingCreate() {
                   />
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
                   <InputField
                     label="Gestor de referência"
                     type="text"
@@ -317,6 +311,14 @@ export default function AdminTrainingCreate() {
                   />
 
                   <InputField
+                    label="Nome do instrutor"
+                    placeholder="Nome do instrutor responsável"
+                    value={instructorName}
+                    onChange={(event) => setInstructorName(event.target.value)}
+                  />
+                               
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <InputField
                     label="Duração (minutos)"
                     type="number"
                     placeholder="45"
@@ -325,22 +327,6 @@ export default function AdminTrainingCreate() {
                   />
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <InputField
-                    label="Nome do instrutor"
-                    placeholder="Nome do instrutor responsável"
-                    value={instructorName}
-                    onChange={(event) => setInstructorName(event.target.value)}
-                  />
-
-                  <SelectField
-                    label="Versão"
-                    options={versoes}
-                    placeholder="Selecione"
-                    value={version}
-                    onChange={(event) => setVersion(event.target.value)}
-                  />
-                </div>
               </div>
             )}
 
@@ -617,29 +603,6 @@ export default function AdminTrainingCreate() {
                 <h3 className="font-display font-semibold text-foreground">Termo de ciência</h3>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Pré-visualização
-                  </label>
-                  <div className="flex items-center justify-center h-48 bg-muted rounded-lg p-4 overflow-y-auto">
-                    <p className="text-center text-sm text-muted-foreground">
-                      Elabore aqui o Termo de Ciência com validade institucional, que será assinado
-                      pelo participante após a capacitação.
-                    </p>
-                  </div>
-                </div>
-
-                <SelectField
-                  label="Modelo de termo"
-                  options={termosModelos}
-                  placeholder="Selecione um modelo"
-                  value={termModel}
-                  onChange={(event) => setTermModel(event.target.value)}
-                />
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Texto do termo
-                  </label>
                   <textarea
                     className="input-institutional min-h-32 resize-none"
                     placeholder="Digite o termo de ciência..."
@@ -670,15 +633,6 @@ export default function AdminTrainingCreate() {
                     disabled={isSaving}
                   >
                     Cancelar
-                  </ButtonRole>
-
-                  <ButtonRole
-                    variant="outline"
-                    fullWidth
-                    onClick={() => handleSave("draft")}
-                    disabled={isSaving}
-                  >
-                    Salvar rascunho
                   </ButtonRole>
 
                   <ButtonRole
