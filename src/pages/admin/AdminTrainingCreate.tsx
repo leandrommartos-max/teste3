@@ -297,7 +297,6 @@ export default function AdminTrainingCreate() {
                   />
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
                   <InputField
                     label="Gestor de referência"
                     type="text"
@@ -305,8 +304,14 @@ export default function AdminTrainingCreate() {
                     value={referenceManager}
                     onChange={(event) => setReferenceManager(event.target.value)}
                   />
-                </div>
-                
+
+                  <InputField
+                    label="Nome do instrutor"
+                    placeholder="Nome do instrutor responsável"
+                    value={instructorName}
+                    onChange={(event) => setInstructorName(event.target.value)}
+                  />
+                               
                 <div className="grid sm:grid-cols-2 gap-4">
                   <InputField
                     label="Duração (minutos)"
@@ -317,15 +322,6 @@ export default function AdminTrainingCreate() {
                   />
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <InputField
-                    label="Nome do instrutor"
-                    placeholder="Nome do instrutor responsável"
-                    value={instructorName}
-                    onChange={(event) => setInstructorName(event.target.value)}
-                  />
-
-                </div>
               </div>
             )}
 
