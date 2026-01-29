@@ -10,7 +10,7 @@ import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
 
-const INSTITUTIONS_TABLE = "setor";
+const INSTITUTIONS_TABLE = "lk_setor";
 
 const setores = [
   { value: "", label: "Todos os setores" },
@@ -130,11 +130,14 @@ export default function AdminTrainingCreate() {
         return;
       }
 
-      const options =
-        data
-          ?.map((item) => item.setor_sem_detalhe?.trim())
-          .filter((local): local is string => Boolean(local))
-          .map((local) => ({ value: local, label: local })) ?? [];
+      const uniqueLocals = Array.from(
+        new Set(
+          data
+            ?.map((item) => item.setor_sem_detalhe?.trim())
+            .filter((local): local is string => Boolean(local)) ?? []
+        )
+      );
+      const options = uniqueLocals.map((local) => ({ value: local, label: local }));
 
       setInstitutionOptions(options);
       setIsInstitutionLoading(false);

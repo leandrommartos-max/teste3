@@ -103,7 +103,7 @@ export default function Register() {
   // Carregar setores do Supabase
   useEffect(() => {
     const loadSetores = async () => {
-      const { data, error } = await supabase.from("setor").select("id, setor");
+      const { data, error } = await supabase.from("lk_setor").select("id, setor");
 
       if (error) {
         console.error("Erro ao carregar Setores:", error);
