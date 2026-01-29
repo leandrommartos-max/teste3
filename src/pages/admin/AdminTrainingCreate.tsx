@@ -29,11 +29,6 @@ const categoriasProf = [
   { value: "administrativo", label: "Administrativo" },
 ];
 
-const termosModelos = [
-  { value: "padrao", label: "Termo padrão" },
-  { value: "nr32", label: "Termo NR-32" },
-];
-
 const TRAININGS_TABLE = "capacitacoes";
 const STORAGE_BUCKET = "capacitacoes-assets";
 
@@ -615,26 +610,6 @@ export default function AdminTrainingCreate() {
             {activeTab === "term" && (
               <div className="card-institutional p-6 space-y-4">
                 <h3 className="font-display font-semibold text-foreground">Termo de ciência</h3>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Pré-visualização
-                  </label>
-                  <div className="flex items-center justify-center h-48 bg-muted rounded-lg p-4 overflow-y-auto">
-                    <p className="text-center text-sm text-muted-foreground">
-                      Elabore aqui o Termo de Ciência com validade institucional, que será assinado
-                      pelo participante após a capacitação.
-                    </p>
-                  </div>
-                </div>
-
-                <SelectField
-                  label="Modelo de termo"
-                  options={termosModelos}
-                  placeholder="Selecione um modelo"
-                  value={termModel}
-                  onChange={(event) => setTermModel(event.target.value)}
-                />
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1.5">
