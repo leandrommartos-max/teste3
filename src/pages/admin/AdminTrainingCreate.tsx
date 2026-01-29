@@ -370,6 +370,7 @@ export default function AdminTrainingCreate() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <Popover>
                     <div className="space-y-1.5 sm:col-span-2">
+                    <div className="space-y-1.5">
                       <label className="block text-sm font-medium text-foreground">Local</label>
                       <PopoverTrigger asChild>
                         <button
@@ -427,7 +428,45 @@ export default function AdminTrainingCreate() {
                     </div>
                   </Popover>
                   <SelectField
-                    label="Setor"
+                    label="Local"
+                    options={institutionOptions}
+                    placeholder={isInstitutionLoading ? "Carregando..." : undefined}
+                    value={institution}
+                    onChange={(event) =>
+                      setInstitution(
+                        Array.from(event.target.selectedOptions, (option) => option.value)
+                      )
+                    }
+                    disabled={isInstitutionLoading}
+                    error={institutionLoadError ?? undefined}
+                    multiple
+                    size={1}
+                    value={institution}
+                    onChange={(event) =>
+                      setInstitution(
+                        Array.from(event.target.selectedOptions, (option) => option.value)
+                      )
+                    }
+                    disabled={isInstitutionLoading}
+                    error={institutionLoadError ?? undefined}
+                    multiple
+                    value={institution}
+                    onChange={(event) =>
+                      setInstitution(
+                        Array.from(event.target.selectedOptions, (option) => option.value)
+                      )
+                    }
+                    disabled={isInstitutionLoading}
+                    error={institutionLoadError ?? undefined}
+                    multiple
+                    placeholder={isInstitutionLoading ? "Carregando..." : "Selecione"}
+                    value={institution}
+                    onChange={(event) => setInstitution(event.target.value)}
+                    disabled={isInstitutionLoading}
+                    error={institutionLoadError ?? undefined}
+                  />
+                  <SelectField
+                    label="Setor (HMP)"
                     options={setores}
                     placeholder="Todos"
                     value={sector}
