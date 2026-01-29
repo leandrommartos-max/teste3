@@ -26,12 +26,6 @@ const procedencias: Option[] = [
   },
 ];
 
-const categorias: Option[] = [
-  { value: "Profissional de Outro Serviço", label: "Profissional de Outro Serviço" },
-  { value: "Docente", label: "Docente" },
-  { value: "Estudante", label: "Estudante" },
-];
-
 type FormData = {
   nomeCompleto: string;
   cpf: string;
@@ -54,6 +48,7 @@ export default function Register() {
   const [vinculo, setVinculo] = useState("");
 
   const [funcoes, setFuncoes] = useState<Option[]>([]);
+  const [categorias, setCategorias] = useState<Option[]>([]);
   const [setores, setSetores] = useState<Option[]>([]);
 
   const [formData, setFormData] = useState<FormData>({
@@ -119,6 +114,34 @@ export default function Register() {
     };
 
     loadSetores();
+  }, []);
+
+  // Carregar categorias a partir da tabela funcao (funcao_sem_especialidade)
+  useEffect(() => {
+    const loadCategorias = async () => {
+      const { data, error } = await supabase
+        .from("funcao")
+        .select("funcao_sem_especialidade")
+        .order("funcao_sem_especialidade");
+
+      if (error) {
+        console.error("Erro ao carregar categorias:", error);
+        return;
+      }
+
+      const options =
+        data
+          ?.map((item: { funcao_sem_especialidade: string | null }) =>
+            item.funcao_sem_especialidade?.trim()
+          )
+          .filter((value): value is string => Boolean(value))
+          .filter((value, index, array) => array.indexOf(value) === index)
+          .map((value) => ({ value, label: value })) ?? [];
+
+      setCategorias(options);
+    };
+
+    loadCategorias();
   }, []);
 
   // Se NÃO for "outra instituição", limpa os 3 campos extras
@@ -437,4 +460,3 @@ export default function Register() {
     </div>
   );
 }
-
