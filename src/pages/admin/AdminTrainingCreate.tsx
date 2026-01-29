@@ -10,11 +10,6 @@ import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
 
-const versoes = [
-  { value: "1.0", label: "v1.0" },
-  { value: "1.1", label: "v1.1" },
-];
-
 const INSTITUTIONS_TABLE = "local_lotacao";
 
 const setores = [
@@ -328,13 +323,6 @@ export default function AdminTrainingCreate() {
                     onChange={(event) => setInstructorName(event.target.value)}
                   />
 
-                  <SelectField
-                    label="Versão"
-                    options={versoes}
-                    placeholder="Selecione"
-                    value={version}
-                    onChange={(event) => setVersion(event.target.value)}
-                  />
                 </div>
               </div>
             )}
