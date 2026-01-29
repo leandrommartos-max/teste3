@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, Upload } from "lucide-react";
 import { TopbarSticky } from "@/components/global/TopbarSticky";
@@ -12,7 +12,7 @@ const versoes = [
   { value: "1.1", label: "v1.1" },
 ];
 
-const instituicoes = [{ value: "hospital_municipal", label: "Hospital Municipal" }];
+const INSTITUTIONS_TABLE = "local_lotacao";
 
 const setores = [
   { value: "", label: "Todos os setores" },
@@ -89,11 +89,54 @@ export default function AdminTrainingCreate() {
   // Save
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [institutionOptions, setInstitutionOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [isInstitutionLoading, setIsInstitutionLoading] = useState(false);
+  const [institutionLoadError, setInstitutionLoadError] = useState<string | null>(null);
 
   // Quiz
   const [questions, setQuestions] = useState<QuizQuestion[]>([
     { id: 1, question: "", optionA: "", optionB: "", optionC: "", correct: "" },
   ]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchInstitutions = async () => {
+      setIsInstitutionLoading(true);
+      setInstitutionLoadError(null);
+
+      const { data, error } = await supabase
+        .from(INSTITUTIONS_TABLE)
+        .select("local")
+        .order("local", { ascending: true });
+
+      if (!isMounted) return;
+
+      if (error) {
+        setInstitutionLoadError("Não foi possível carregar as instituições.");
+        setInstitutionOptions([]);
+        setIsInstitutionLoading(false);
+        return;
+      }
+
+      const options =
+        data
+          ?.map((item) => item.local?.trim())
+          .filter((local): local is string => Boolean(local))
+          .map((local) => ({ value: local, label: local })) ?? [];
+
+      setInstitutionOptions(options);
+      setIsInstitutionLoading(false);
+    };
+
+    fetchInstitutions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const addQuestion = () => {
     setQuestions((prev) => [
@@ -315,10 +358,12 @@ export default function AdminTrainingCreate() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <SelectField
                     label="Instituição"
-                    options={instituicoes}
-                    placeholder="Selecione"
+                    options={institutionOptions}
+                    placeholder={isInstitutionLoading ? "Carregando..." : "Selecione"}
                     value={institution}
                     onChange={(event) => setInstitution(event.target.value)}
+                    disabled={isInstitutionLoading}
+                    error={institutionLoadError ?? undefined}
                   />
                   <SelectField
                     label="Setor"
