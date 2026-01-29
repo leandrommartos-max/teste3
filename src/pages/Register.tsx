@@ -15,7 +15,7 @@ const vinculos = [
   { value: "Profissional Terceirizado", label: "Profissional Terceirizado" },
 ];
 
-const procedencias: Option[] = [
+const defaultProcedencias: Option[] = [
   {
     value: "Trabalha para a Secretaria de Saúde de Paulínia",
     label: "Trabalha para a Secretaria de Saúde de Paulínia",
@@ -55,6 +55,7 @@ export default function Register() {
 
   const [funcoes, setFuncoes] = useState<Option[]>([]);
   const [setores, setSetores] = useState<Option[]>([]);
+  const [procedencias, setProcedencias] = useState<Option[]>(defaultProcedencias);
 
   const [formData, setFormData] = useState<FormData>({
     nomeCompleto: "",
@@ -98,6 +99,30 @@ export default function Register() {
     };
 
     loadFuncoes();
+  }, []);
+
+  // Carregar procedências do Supabase
+  useEffect(() => {
+    const loadProcedencias = async () => {
+      const { data, error } = await supabase.from("lk_procedencia").select("procedencia");
+
+      if (error) {
+        console.error("Erro ao carregar procedências:", error);
+        return;
+      }
+
+      const loadedProcedencias =
+        data
+          ?.map((item: any) => item.procedencia as string)
+          .filter((procedencia) => Boolean(procedencia))
+          .map((procedencia) => ({ value: procedencia, label: procedencia })) ?? [];
+
+      if (loadedProcedencias.length > 0) {
+        setProcedencias(loadedProcedencias);
+      }
+    };
+
+    loadProcedencias();
   }, []);
 
   // Carregar setores do Supabase
