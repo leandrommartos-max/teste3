@@ -20,6 +20,9 @@ const termosModelos = [
 ];
 
 const TRAININGS_TABLE = "trainings";
+const TRAINING_LOCATIONS_TABLE = "training_locations";
+const TRAINING_CATEGORIES_TABLE = "training_professional_categories";
+const TRAINING_SECTORS_TABLE = "training_sectors";
 const STORAGE_BUCKET = "training-documents";
 
 const tabs = [
@@ -329,7 +332,11 @@ export default function AdminTrainingCreate() {
   };
 
   const uploadFile = async (file: File, folder: string) => {
-    const safeName = file.name.replaceAll(" ", "_");
+    const normalizedName = file.name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w.-]+/g, "_");
+    const safeName = normalizedName || `arquivo_${Date.now()}`;
     const filePath = `${folder}/${crypto.randomUUID()}-${safeName}`;
 
     const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(filePath, file, {
@@ -339,6 +346,40 @@ export default function AdminTrainingCreate() {
 
     if (error) throw error;
     return filePath;
+  };
+
+  const getSaveErrorMessage = (error: unknown) => {
+    if (!error || typeof error !== "object") {
+      return "Erro ao salvar capacitação.";
+    }
+
+    if ("message" in error && typeof error.message === "string" && error.message.trim()) {
+      const message = error.message;
+      if (message.includes("Could not find the") && message.includes("column of 'trainings'")) {
+        const match = message.match(/'([^']+)' column of 'trainings'/);
+        const column = match?.[1];
+        return column
+          ? `A coluna '${column}' não existe na tabela trainings. Crie essa coluna no Supabase ou rode a migration correspondente.`
+          : "Uma coluna usada no cadastro não existe na tabela trainings. Crie a coluna no Supabase ou rode a migration correspondente.";
+      }
+
+      const details =
+        "details" in error && typeof error.details === "string" && error.details.trim()
+          ? ` (${error.details})`
+          : "";
+      const hint =
+        "hint" in error && typeof error.hint === "string" && error.hint.trim()
+          ? ` Dica: ${error.hint}`
+          : "";
+      const code =
+        "code" in error && typeof error.code === "string" && error.code.trim()
+          ? ` [${error.code}]`
+          : "";
+
+      return `${message}${details}${hint}${code}`;
+    }
+
+    return "Erro ao salvar capacitação.";
   };
 
   const handleSave = async (status: "draft" | "published") => {
@@ -364,18 +405,15 @@ export default function AdminTrainingCreate() {
         version,
         cover_image_path: coverImagePath,
         link_video: videoLink,
-        institution,
-        sector,
-        professional_category: professionalCategory,
         role_function: roleFunction,
         employment_bond: employmentBond,
-        completion_deadline: completionDeadline || null,
-        requirement_level: requirementLevel,
+        prazo_conclusao: completionDeadline || null,
+        nivel_requisito: requirementLevel,
         audience_message: audienceMessage,
         reference_pdf_path: referencePdfPath,
         quiz_questions: questions,
         term_model: termModel,
-        term_text: termText,
+        texto_termo: termText,
         status,
       };
 
@@ -386,7 +424,47 @@ export default function AdminTrainingCreate() {
         .single();
       if (error) throw error;
 
+      if (!trainingData?.id) {
+        throw new Error("Capacitação criada sem retorno do identificador.");
+      }
+
       const trainingId = trainingData.id;
+
+      if (institution.length > 0) {
+        const locationRows = institution.map((location) => ({
+          training_id: trainingId,
+          location,
+        }));
+
+        const { error: locationError } = await supabase
+          .from(TRAINING_LOCATIONS_TABLE)
+          .insert(locationRows);
+        if (locationError) throw locationError;
+      }
+
+      if (professionalCategory.length > 0) {
+        const categoryRows = professionalCategory.map((category) => ({
+          training_id: trainingId,
+          category,
+        }));
+
+        const { error: categoryError } = await supabase
+          .from(TRAINING_CATEGORIES_TABLE)
+          .insert(categoryRows);
+        if (categoryError) throw categoryError;
+      }
+
+      if (sector.length > 0) {
+        const sectorRows = sector.map((sectorName) => ({
+          training_id: trainingId,
+          sector: sectorName,
+        }));
+
+        const { error: sectorError } = await supabase
+          .from(TRAINING_SECTORS_TABLE)
+          .insert(sectorRows);
+        if (sectorError) throw sectorError;
+      }
       const preparedQuestions = questions
         .map((question) => ({
           question,
@@ -432,7 +510,8 @@ export default function AdminTrainingCreate() {
 
       navigate("/admin/capacitacoes");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro ao salvar capacitação.";
+      console.error("Erro ao salvar capacitação:", error);
+      const message = getSaveErrorMessage(error);
       setSaveError(message);
     } finally {
       setIsSaving(false);
