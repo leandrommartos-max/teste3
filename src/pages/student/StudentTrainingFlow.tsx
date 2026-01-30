@@ -182,7 +182,7 @@ export default function StudentTrainingFlow() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <FileText className="w-4 h-4" />
-                    <span>Versão 2.0</span>
+                    <span>Nome do Instrutor</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-4 h-4" />
@@ -387,8 +387,7 @@ export default function StudentTrainingFlow() {
                     <span className="text-foreground">Segurança do Paciente</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Versão:</span>
-                    <span className="text-foreground">2.0</span>
+                    <span className="text-muted-foreground">Nome do Instrutor:</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Data de conclusão:</span>
