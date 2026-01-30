@@ -10,13 +10,7 @@ import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
 
-const INSTITUTIONS_TABLE = "local_lotacao";
-
-const setores = [
-  { value: "", label: "Todos os setores" },
-  { value: "uti", label: "UTI" },
-  { value: "pronto_atendimento", label: "Pronto Atendimento" },
-];
+const INSTITUTIONS_TABLE = "lk_setor";
 
 const FUNCTIONS_TABLE = "lk_funcao";
 
@@ -65,8 +59,8 @@ export default function AdminTrainingCreate() {
 
   // Audience
   const [institution, setInstitution] = useState<string[]>([]);
-  const [sector, setSector] = useState("");
-  const [professionalCategory, setProfessionalCategory] = useState("");
+  const [sector, setSector] = useState<string[]>([]);
+  const [professionalCategory, setProfessionalCategory] = useState<string[]>([]);
   const [roleFunction, setRoleFunction] = useState("");
   const [employmentBond, setEmploymentBond] = useState("");
   const [completionDeadline, setCompletionDeadline] = useState("");
@@ -91,6 +85,11 @@ export default function AdminTrainingCreate() {
   const [functionOptions, setFunctionOptions] = useState<{ value: string; label: string }[]>([]);
   const [isFunctionLoading, setIsFunctionLoading] = useState(false);
   const [functionLoadError, setFunctionLoadError] = useState<string | null>(null);
+  const [sectorOptions, setSectorOptions] = useState<{ value: string; label: string }[]>([
+    { value: "", label: "Todos os setores" },
+  ]);
+  const [isSectorLoading, setIsSectorLoading] = useState(false);
+  const [sectorLoadError, setSectorLoadError] = useState<string | null>(null);
 
   // Quiz
   const [questions, setQuestions] = useState<QuizQuestion[]>([
@@ -118,8 +117,8 @@ export default function AdminTrainingCreate() {
 
       const { data, error } = await supabase
         .from(INSTITUTIONS_TABLE)
-        .select("local")
-        .order("local", { ascending: true });
+        .select("setor_sem_detalhe", { distinct: true })
+        .order("setor_sem_detalhe", { ascending: true });
 
       if (!isMounted) return;
 
@@ -130,17 +129,71 @@ export default function AdminTrainingCreate() {
         return;
       }
 
-      const options =
-        data
-          ?.map((item) => item.local?.trim())
-          .filter((local): local is string => Boolean(local))
-          .map((local) => ({ value: local, label: local })) ?? [];
+      const uniqueLocals = Array.from(
+        new Set(
+          data
+            ?.map((item) => item.setor_sem_detalhe?.trim())
+            .filter((local): local is string => Boolean(local)) ?? []
+        )
+      );
+      const options = uniqueLocals.map((local) => ({ value: local, label: local }));
 
       setInstitutionOptions(options);
       setIsInstitutionLoading(false);
     };
 
     fetchInstitutions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hasSupabaseConfig]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchSectors = async () => {
+      setIsSectorLoading(true);
+      setSectorLoadError(null);
+
+      if (!hasSupabaseConfig) {
+        if (!isMounted) return;
+        setSectorLoadError("Configuração do Supabase ausente.");
+        setSectorOptions([{ value: "", label: "Todos os setores" }]);
+        setIsSectorLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from(INSTITUTIONS_TABLE)
+        .select("setor")
+        .order("setor", { ascending: true });
+
+      if (!isMounted) return;
+
+      if (error) {
+        setSectorLoadError("Não foi possível carregar os setores.");
+        setSectorOptions([{ value: "", label: "Todos os setores" }]);
+        setIsSectorLoading(false);
+        return;
+      }
+
+      const filteredSectors = Array.from(
+        new Set(
+          data
+            ?.map((item) => item.setor?.trim())
+            .filter((setor): setor is string => Boolean(setor))
+            .filter((setor) => setor.toLowerCase().includes("hmp")) ?? []
+        )
+      );
+
+      const options = filteredSectors.map((setor) => ({ value: setor, label: setor }));
+
+      setSectorOptions([{ value: "", label: "Todos os setores" }, ...options]);
+      setIsSectorLoading(false);
+    };
+
+    fetchSectors();
 
     return () => {
       isMounted = false;
@@ -216,6 +269,16 @@ export default function AdminTrainingCreate() {
     );
   };
 
+  const handleProfessionalCategoryToggle = (value: string, checked: boolean) => {
+    setProfessionalCategory((prev) =>
+      checked ? [...prev, value] : prev.filter((item) => item !== value)
+    );
+  };
+
+  const handleSectorToggle = (value: string, checked: boolean) => {
+    setSector((prev) => (checked ? [...prev, value] : prev.filter((item) => item !== value)));
+  };
+
   const institutionLabel = (() => {
     if (institution.length === 0) return "0 seleções";
     if (institution.length === 1) {
@@ -226,6 +289,27 @@ export default function AdminTrainingCreate() {
       );
     }
     return `${institution.length} seleções`;
+  })();
+
+  const professionalCategoryLabel = (() => {
+    if (professionalCategory.length === 0) return "0 seleções";
+    if (professionalCategory.length === 1) {
+      const singleCategory = professionalCategory[0];
+      return (
+        functionOptions.find((option) => option.value === singleCategory)?.label ??
+        singleCategory
+      );
+    }
+    return `${professionalCategory.length} seleções`;
+  })();
+
+  const sectorLabel = (() => {
+    if (sector.length === 0) return "0 seleções";
+    if (sector.length === 1) {
+      const singleSector = sector[0];
+      return sectorOptions.find((option) => option.value === singleSector)?.label ?? singleSector;
+    }
+    return `${sector.length} seleções`;
   })();
 
   const removeQuestion = (id: number) => {
@@ -267,10 +351,11 @@ export default function AdminTrainingCreate() {
         : null;
 
       const payload = {
-        title,
-        description,
+        titulo: title,
+        descricao: description,
         reference_manager: referenceManager,
-        duration_minutes: durationMinutes ? Number(durationMinutes) : null,
+        duracao_minutos: durationMinutes ? Number(durationMinutes) : null,
+        nome_instrutor: referenceManager,
         instructor_name: instructorName,
         version,
         cover_image_path: coverImagePath,
@@ -485,30 +570,142 @@ export default function AdminTrainingCreate() {
                         )}
                       </div>
                     </Popover>
-                    <SelectField
-                      label="Setor (HMP)"
-                      options={setores}
-                      placeholder="Todos"
-                      value={sector}
-                      onChange={(event) => setSector(event.target.value)}
-                    />
+                    <Popover>
+                      <div className="space-y-1.5">
+                        <label className="block text-sm font-medium text-foreground">
+                          Setor (HMP)
+                        </label>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={isSectorLoading}
+                            className={cn(
+                              "input-institutional flex items-center justify-between text-left",
+                              isSectorLoading && "opacity-60 cursor-not-allowed"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "text-sm",
+                                sector.length === 0 ? "text-muted-foreground" : "text-foreground"
+                              )}
+                            >
+                              {isSectorLoading ? "Carregando..." : sectorLabel}
+                            </span>
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </PopoverTrigger>
+
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
+                          {sectorOptions.length > 0 ? (
+                            <div className="max-h-60 space-y-2 overflow-auto">
+                              {sectorOptions.map((option) => {
+                                const isChecked = sector.includes(option.value);
+                                const optionId = `setor-option-${option.value.replace(/\s+/g, "-")}`;
+                                return (
+                                  <label
+                                    key={option.value}
+                                    htmlFor={optionId}
+                                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted/50"
+                                  >
+                                    <Checkbox
+                                      id={optionId}
+                                      checked={isChecked}
+                                      onCheckedChange={(checked) =>
+                                        handleSectorToggle(option.value, checked === true)
+                                      }
+                                    />
+                                    <span>{option.label}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="px-2 py-1 text-sm text-muted-foreground">
+                              Nenhum setor disponível.
+                            </p>
+                          )}
+                        </PopoverContent>
+                        {sectorLoadError && (
+                          <p className="text-sm text-destructive">{sectorLoadError}</p>
+                        )}
+                      </div>
+                    </Popover>
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <SelectField
-                      label="Categoria profissional"
-                      options={functionOptions}
-                      placeholder="Todas"
-                      value={professionalCategory}
-                      onChange={(event) => setProfessionalCategory(event.target.value)}
-                      disabled={isFunctionLoading}
-                      error={functionLoadError ?? undefined}
-                    />
+                    <Popover>
+                      <div className="space-y-1.5">
+                        <label className="block text-sm font-medium text-foreground">
+                          Categoria profissional
+                        </label>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={isFunctionLoading}
+                            className={cn(
+                              "input-institutional flex items-center justify-between text-left",
+                              isFunctionLoading && "opacity-60 cursor-not-allowed"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "text-sm",
+                                professionalCategory.length === 0
+                                  ? "text-muted-foreground"
+                                  : "text-foreground"
+                              )}
+                            >
+                              {isFunctionLoading ? "Carregando..." : professionalCategoryLabel}
+                            </span>
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </PopoverTrigger>
+
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
+                          {functionOptions.length > 0 ? (
+                            <div className="max-h-60 space-y-2 overflow-auto">
+                              {functionOptions.map((option) => {
+                                const isChecked = professionalCategory.includes(option.value);
+                                const optionId = `categoria-option-${option.value.replace(
+                                  /\s+/g,
+                                  "-"
+                                )}`;
+                                return (
+                                  <label
+                                    key={option.value}
+                                    htmlFor={optionId}
+                                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted/50"
+                                  >
+                                    <Checkbox
+                                      id={optionId}
+                                      checked={isChecked}
+                                      onCheckedChange={(checked) =>
+                                        handleProfessionalCategoryToggle(option.value, checked === true)
+                                      }
+                                    />
+                                    <span>{option.label}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="px-2 py-1 text-sm text-muted-foreground">
+                              Nenhuma categoria disponível.
+                            </p>
+                          )}
+                        </PopoverContent>
+                        {functionLoadError && (
+                          <p className="text-sm text-destructive">{functionLoadError}</p>
+                        )}
+                      </div>
+                    </Popover>
                     <InputField
                       label="Prazo para conclusão"
                       type="date"
                       value={completionDeadline}
                       onChange={(event) => setCompletionDeadline(event.target.value)}
+                      className="py-2.5"
                     />
                   </div>
                 </div>
