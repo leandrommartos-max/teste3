@@ -17,6 +17,8 @@ import { ButtonRole } from "@/components/ui/button-role";
 import { SelectField } from "@/components/ui/select-field";
 import { supabase } from "@/lib/supabaseClient";
 
+const STORAGE_BUCKET = "training-documents";
+
 const stages = [
   { id: 1, name: "Detalhes", icon: FileText },
   { id: 2, name: "Conteúdo", icon: Play },
@@ -70,6 +72,7 @@ export default function StudentTrainingFlow() {
       prazo_conclusao: string | null;
       duracao_minutos: number | null;
       descricao: string | null;
+      reference_pdf_path: string | null;
     }[]
   >([]);
   const [trainingsLoading, setTrainingsLoading] = useState(true);
@@ -86,7 +89,7 @@ export default function StudentTrainingFlow() {
       const { data, error } = await supabase
         .from("trainings")
         .select(
-          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao",
+          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao, reference_pdf_path",
         )
         .order("titulo", { ascending: true });
 
@@ -105,6 +108,7 @@ export default function StudentTrainingFlow() {
         prazo_conclusao: training.prazo_conclusao ?? null,
         duracao_minutos: training.duracao_minutos ?? null,
         descricao: training.descricao ?? null,
+        reference_pdf_path: training.reference_pdf_path ?? null,
       }));
 
       setTrainingOptions(options);
@@ -138,6 +142,11 @@ export default function StudentTrainingFlow() {
   const formattedDuracao = selectedTrainingDetails?.duracao_minutos
     ? `${selectedTrainingDetails.duracao_minutos} min`
     : "Duração não informada";
+  const referencePdfUrl = selectedTrainingDetails?.reference_pdf_path
+    ? supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(selectedTrainingDetails.reference_pdf_path).data.publicUrl
+    : null;
 
   const handleNext = () => {
     if (currentStage < 5) {
@@ -248,10 +257,23 @@ export default function StudentTrainingFlow() {
               <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
                 <FileText className="w-10 h-10 text-primary" />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">Apostila - Segurança do Paciente</p>
-                  <p className="text-sm text-muted-foreground">PDF • 2.5 MB</p>
+                  <p className="font-medium text-foreground">
+                    Apostila - {selectedTrainingLabel}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {referencePdfUrl ? "PDF disponível" : "PDF não informado"}
+                  </p>
                 </div>
-                <ButtonRole variant="outline" size="sm">
+                <ButtonRole
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (referencePdfUrl) {
+                      window.open(referencePdfUrl, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  disabled={!referencePdfUrl}
+                >
                   Abrir
                 </ButtonRole>
               </div>
