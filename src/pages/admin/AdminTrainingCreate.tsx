@@ -20,7 +20,7 @@ const termosModelos = [
 ];
 
 const TRAININGS_TABLE = "trainings";
-const STORAGE_BUCKET = "capacitacoes-assets";
+const STORAGE_BUCKET = "training-documents";
 
 const tabs = [
   { id: "basic", label: "Básico" },
@@ -359,7 +359,7 @@ export default function AdminTrainingCreate() {
         instructor_name: instructorName,
         version,
         cover_image_path: coverImagePath,
-        video_link: videoLink,
+        link_video: videoLink,
         institution,
         sector,
         professional_category: professionalCategory,
