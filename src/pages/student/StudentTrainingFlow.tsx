@@ -142,10 +142,12 @@ export default function StudentTrainingFlow() {
   const formattedDuracao = selectedTrainingDetails?.duracao_minutos
     ? `${selectedTrainingDetails.duracao_minutos} min`
     : "Duração não informada";
-  const referencePdfUrl = selectedTrainingDetails?.reference_pdf_path
-    ? supabase.storage
-        .from(STORAGE_BUCKET)
-        .getPublicUrl(selectedTrainingDetails.reference_pdf_path).data.publicUrl
+  const referencePdfPath = selectedTrainingDetails?.reference_pdf_path ?? null;
+  const referencePdfUrl = referencePdfPath
+    ? /^https?:\/\//.test(referencePdfPath)
+      ? referencePdfPath
+      : supabase.storage.from(STORAGE_BUCKET).getPublicUrl(referencePdfPath).data
+          .publicUrl
     : null;
 
   const handleNext = () => {
