@@ -405,6 +405,7 @@ export default function AdminTrainingCreate() {
         cover_image_path: coverImagePath,
         link_video: videoLink,
         role_function: roleFunction,
+        employment_bond: employmentBond,
         prazo_conclusao: completionDeadline || null,
         nivel_requisito: requirementLevel,
         audience_message: audienceMessage,
