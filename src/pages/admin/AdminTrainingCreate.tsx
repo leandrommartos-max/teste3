@@ -480,6 +480,8 @@ export default function AdminTrainingCreate() {
             { key: "a", value: question.optionA },
             { key: "b", value: question.optionB },
             { key: "c", value: question.optionC },
+            { key: "d", value: question.optionD },
+            { key: "e", value: question.optionE },
           ]
             .map((option) => ({
               question_id: insertedQuestion.id,
