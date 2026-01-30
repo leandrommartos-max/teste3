@@ -55,7 +55,7 @@ export default function Register() {
 
   const [funcoes, setFuncoes] = useState<Option[]>([]);
   const [setores, setSetores] = useState<Option[]>([]);
-  const [procedencias, setProcedencias] = useState<Option[]>(defaultProcedencias);
+  const procedencias = defaultProcedencias;
 
   const [formData, setFormData] = useState<FormData>({
     nomeCompleto: "",
@@ -101,30 +101,6 @@ export default function Register() {
     loadFuncoes();
   }, []);
 
-  // Carregar procedências do Supabase
-  useEffect(() => {
-    const loadProcedencias = async () => {
-      const { data, error } = await supabase.from("lk_procedencia").select("procedencia");
-
-      if (error) {
-        console.error("Erro ao carregar procedências:", error);
-        return;
-      }
-
-      const loadedProcedencias =
-        data
-          ?.map((item: any) => item.procedencia as string)
-          .filter((procedencia) => Boolean(procedencia))
-          .map((procedencia) => ({ value: procedencia, label: procedencia })) ?? [];
-
-      if (loadedProcedencias.length > 0) {
-        setProcedencias(loadedProcedencias);
-      }
-    };
-
-    loadProcedencias();
-  }, []);
-
   // Carregar setores do Supabase
   useEffect(() => {
     const loadSetores = async () => {
@@ -148,7 +124,7 @@ export default function Register() {
 
   // Se NÃO for "outra instituição", limpa os 3 campos extras
   useEffect(() => {
-    if (formData.lk_procedencia !== "Trabalha ou Estuda em Outra Instituição") {
+    if (formData.procedencia !== "Trabalha ou Estuda em Outra Instituição") {
       setFormData((prev) => ({
         ...prev,
         categoria: "",
@@ -172,7 +148,7 @@ export default function Register() {
     }
 
     // Validação condicional: só exige esses campos se for "outra instituição"
-    if (formData.lk_procedencia === "Trabalha ou Estuda em Outra Instituição") {
+    if (formData.procedencia === "Trabalha ou Estuda em Outra Instituição") {
       if (!formData.categoria || !formData.instituicao || !formData.funcaoCurso) {
         alert("Preencha Categoria, Instituição e Função/Curso.");
         return;
@@ -202,15 +178,15 @@ export default function Register() {
         funcao: formData.funcao,
         setor: formData.setor,
         categoria:
-          formData.lk_procedencia === "Trabalha ou Estuda em Outra Instituição"
+          formData.procedencia === "Trabalha ou Estuda em Outra Instituição"
             ? formData.categoria
             : null,
         instituicao:
-          formData.lk_procedencia === "Trabalha ou Estuda em Outra Instituição"
+          formData.procedencia === "Trabalha ou Estuda em Outra Instituição"
             ? formData.instituicao
             : null,
         funcao_curso:
-          formData.lk_procedencia === "Trabalha ou Estuda em Outra Instituição"
+          formData.procedencia === "Trabalha ou Estuda em Outra Instituição"
             ? formData.funcaoCurso
             : null,
         vinculo: vinculo,
@@ -308,7 +284,7 @@ export default function Register() {
               />
 
               {/* Campos extras somente se "outra instituição" */}
-              {formData.lk_procedencia === "Trabalha ou Estuda em Outra Instituição" && (
+              {formData.procedencia === "Trabalha ou Estuda em Outra Instituição" && (
                 <div className="p-4 bg-muted/50 rounded-lg space-y-4">
                   <SelectField
                     label="Categoria *"
