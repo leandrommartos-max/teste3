@@ -369,7 +369,7 @@ export default function AdminTrainingCreate() {
         link_video: videoLink,
         role_function: roleFunction,
         employment_bond: employmentBond,
-        completion_deadline: completionDeadline || null,
+        prazo_conclusao: completionDeadline || null,
         requirement_level: requirementLevel,
         audience_message: audienceMessage,
         reference_pdf_path: referencePdfPath,
