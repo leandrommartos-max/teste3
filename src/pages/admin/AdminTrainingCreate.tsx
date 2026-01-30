@@ -59,7 +59,7 @@ export default function AdminTrainingCreate() {
 
   // Audience
   const [institution, setInstitution] = useState<string[]>([]);
-  const [sector, setSector] = useState("");
+  const [sector, setSector] = useState<string[]>([]);
   const [professionalCategory, setProfessionalCategory] = useState<string[]>([]);
   const [roleFunction, setRoleFunction] = useState("");
   const [employmentBond, setEmploymentBond] = useState("");
@@ -275,6 +275,10 @@ export default function AdminTrainingCreate() {
     );
   };
 
+  const handleSectorToggle = (value: string, checked: boolean) => {
+    setSector((prev) => (checked ? [...prev, value] : prev.filter((item) => item !== value)));
+  };
+
   const institutionLabel = (() => {
     if (institution.length === 0) return "Escolha os locais";
     if (institution.length === 1) {
@@ -297,6 +301,15 @@ export default function AdminTrainingCreate() {
       );
     }
     return `${professionalCategory.length} seleções`;
+  })();
+
+  const sectorLabel = (() => {
+    if (sector.length === 0) return "0 seleções";
+    if (sector.length === 1) {
+      const singleSector = sector[0];
+      return sectorOptions.find((option) => option.value === singleSector)?.label ?? singleSector;
+    }
+    return `${sector.length} seleções`;
   })();
 
   const removeQuestion = (id: number) => {
@@ -556,15 +569,67 @@ export default function AdminTrainingCreate() {
                         )}
                       </div>
                     </Popover>
-                    <SelectField
-                      label="Setor (HMP)"
-                      options={sectorOptions}
-                      placeholder="Todos"
-                      value={sector}
-                      onChange={(event) => setSector(event.target.value)}
-                      disabled={isSectorLoading}
-                      error={sectorLoadError ?? undefined}
-                    />
+                    <Popover>
+                      <div className="space-y-1.5">
+                        <label className="block text-sm font-medium text-foreground">
+                          Setor (HMP)
+                        </label>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={isSectorLoading}
+                            className={cn(
+                              "input-institutional flex items-center justify-between text-left",
+                              isSectorLoading && "opacity-60 cursor-not-allowed"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "text-sm",
+                                sector.length === 0 ? "text-muted-foreground" : "text-foreground"
+                              )}
+                            >
+                              {isSectorLoading ? "Carregando..." : sectorLabel}
+                            </span>
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </PopoverTrigger>
+
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
+                          {sectorOptions.length > 0 ? (
+                            <div className="max-h-60 space-y-2 overflow-auto">
+                              {sectorOptions.map((option) => {
+                                const isChecked = sector.includes(option.value);
+                                const optionId = `setor-option-${option.value.replace(/\s+/g, "-")}`;
+                                return (
+                                  <label
+                                    key={option.value}
+                                    htmlFor={optionId}
+                                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted/50"
+                                  >
+                                    <Checkbox
+                                      id={optionId}
+                                      checked={isChecked}
+                                      onCheckedChange={(checked) =>
+                                        handleSectorToggle(option.value, checked === true)
+                                      }
+                                    />
+                                    <span>{option.label}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="px-2 py-1 text-sm text-muted-foreground">
+                              Nenhum setor disponível.
+                            </p>
+                          )}
+                        </PopoverContent>
+                        {sectorLoadError && (
+                          <p className="text-sm text-destructive">{sectorLoadError}</p>
+                        )}
+                      </div>
+                    </Popover>
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-4">
