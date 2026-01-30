@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   FileText, 
@@ -15,12 +15,9 @@ import {
 import { TopbarSticky } from "@/components/global/TopbarSticky";
 import { ButtonRole } from "@/components/ui/button-role";
 import { SelectField } from "@/components/ui/select-field";
+import { supabase } from "@/lib/supabaseClient";
 
-const trainings = [
-  { value: "seguranca_paciente", label: "Segurança do Paciente" },
-  { value: "nr32", label: "NR-32 - Segurança e Saúde no Trabalho" },
-  { value: "lgpd", label: "LGPD na Saúde" },
-];
+const STORAGE_BUCKET = "training-documents";
 
 const stages = [
   { id: 1, name: "Detalhes", icon: FileText },
@@ -67,9 +64,115 @@ export default function StudentTrainingFlow() {
   const navigate = useNavigate();
   const [currentStage, setCurrentStage] = useState(1);
   const [selectedTraining, setSelectedTraining] = useState("");
+  const [trainingOptions, setTrainingOptions] = useState<
+    {
+      value: string;
+      label: string;
+      nome_instrutor: string | null;
+      prazo_conclusao: string | null;
+      duracao_minutos: number | null;
+      descricao: string | null;
+      reference_pdf_path: string | null;
+    }[]
+  >([]);
+  const [trainingsLoading, setTrainingsLoading] = useState(true);
+  const [trainingsError, setTrainingsError] = useState<string | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showCongratulations, setShowCongratulations] = useState(false);
+  const [referencePdfUrl, setReferencePdfUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadTrainings = async () => {
+      setTrainingsLoading(true);
+      setTrainingsError(null);
+
+      const { data, error } = await supabase
+        .from("trainings")
+        .select(
+          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao, reference_pdf_path",
+        )
+        .order("titulo", { ascending: true });
+
+      if (error) {
+        console.error("Erro ao carregar capacitações:", error);
+        setTrainingsError("Não foi possível carregar as capacitações.");
+        setTrainingOptions([]);
+        setTrainingsLoading(false);
+        return;
+      }
+
+      const options = (data ?? []).map((training) => ({
+        value: training.id,
+        label: training.titulo ?? "Capacitação sem título",
+        nome_instrutor: training.nome_instrutor ?? null,
+        prazo_conclusao: training.prazo_conclusao ?? null,
+        duracao_minutos: training.duracao_minutos ?? null,
+        descricao: training.descricao ?? null,
+        reference_pdf_path: training.reference_pdf_path ?? null,
+      }));
+
+      setTrainingOptions(options);
+      setTrainingsLoading(false);
+    };
+
+    loadTrainings();
+  }, []);
+
+  const trainingPlaceholder = trainingsLoading
+    ? "Carregando capacitações..."
+    : "Escolha uma capacitação";
+
+  const trainingHint =
+    !trainingsLoading && !trainingsError && trainingOptions.length === 0
+      ? "Nenhuma capacitação disponível no momento."
+      : undefined;
+  const selectedTrainingLabel =
+    trainingOptions.find((training) => training.value === selectedTraining)
+      ?.label ?? "Capacitação selecionada";
+  const selectedTrainingDetails = trainingOptions.find(
+    (training) => training.value === selectedTraining,
+  );
+  const prazoConclusaoDate = selectedTrainingDetails?.prazo_conclusao
+    ? new Date(selectedTrainingDetails.prazo_conclusao)
+    : null;
+  const formattedPrazoConclusao =
+    prazoConclusaoDate && !Number.isNaN(prazoConclusaoDate.getTime())
+      ? prazoConclusaoDate.toLocaleDateString("pt-BR")
+      : "Prazo não informado";
+  const formattedDuracao = selectedTrainingDetails?.duracao_minutos
+    ? `${selectedTrainingDetails.duracao_minutos} min`
+    : "Duração não informada";
+
+  useEffect(() => {
+    const loadReferencePdfUrl = async () => {
+      const referencePdfPath = selectedTrainingDetails?.reference_pdf_path ?? null;
+
+      if (!referencePdfPath) {
+        setReferencePdfUrl(null);
+        return;
+      }
+
+      if (/^https?:\/\//.test(referencePdfPath)) {
+        setReferencePdfUrl(referencePdfPath);
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(referencePdfPath, 60 * 60);
+
+      if (error) {
+        console.error("Erro ao gerar URL do PDF:", error);
+        setReferencePdfUrl(null);
+        return;
+      }
+
+      setReferencePdfUrl(data?.signedUrl ?? null);
+    };
+
+    void loadReferencePdfUrl();
+  }, [selectedTrainingDetails?.reference_pdf_path]);
 
   const handleNext = () => {
     if (currentStage < 5) {
@@ -122,36 +225,44 @@ export default function StudentTrainingFlow() {
           <div className="space-y-6">
             <SelectField
               label="Selecione a capacitação"
-              options={trainings}
+              options={trainingOptions}
               value={selectedTraining}
               onChange={(e) => setSelectedTraining(e.target.value)}
-              placeholder="Escolha uma capacitação"
+              placeholder={trainingPlaceholder}
+              hint={trainingHint}
+              error={trainingsError ?? undefined}
+              disabled={trainingsLoading || trainingOptions.length === 0}
             />
 
             {selectedTraining && (
               <div className="card-institutional p-5 space-y-4">
                 <h3 className="font-display font-semibold text-lg text-foreground">
-                  Segurança do Paciente
+                  {selectedTrainingLabel}
                 </h3>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <FileText className="w-4 h-4" />
-                    <span>Versão 2.0</span>
+                    <span>
+                      {selectedTrainingDetails?.nome_instrutor
+                        ? selectedTrainingDetails.nome_instrutor
+                        : "Instrutor não informado"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    <span>Prazo: 30/01/2024</span>
+                    <span>Prazo: {formattedPrazoConclusao}</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="w-4 h-4" />
-                    <span>Duração: 45 min</span>
+                    <span>Duração: {formattedDuracao}</span>
                   </div>
                 </div>
 
                 <p className="text-sm text-muted-foreground">
-                  Esta capacitação aborda os princípios fundamentais de segurança do paciente 
-                  conforme diretrizes do Ministério da Saúde e OMS.
+                  {selectedTrainingDetails?.descricao
+                    ? selectedTrainingDetails.descricao
+                    : "Descrição não informada."}
                 </p>
 
                 <ButtonRole variant="student" fullWidth onClick={handleNext}>
@@ -172,10 +283,23 @@ export default function StudentTrainingFlow() {
               <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
                 <FileText className="w-10 h-10 text-primary" />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">Apostila - Segurança do Paciente</p>
-                  <p className="text-sm text-muted-foreground">PDF • 2.5 MB</p>
+                  <p className="font-medium text-foreground">
+                    Apostila - {selectedTrainingLabel}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {referencePdfUrl ? "PDF disponível" : "PDF não informado"}
+                  </p>
                 </div>
-                <ButtonRole variant="outline" size="sm">
+                <ButtonRole
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (referencePdfUrl) {
+                      window.open(referencePdfUrl, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  disabled={!referencePdfUrl}
+                >
                   Abrir
                 </ButtonRole>
               </div>
