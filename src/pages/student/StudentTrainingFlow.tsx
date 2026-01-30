@@ -391,7 +391,6 @@ export default function StudentTrainingFlow() {
 
       const attemptPayload = {
         training_id: selectedTraining,
-        user_id: userId,
         started_at: attemptStart,
         finished_at: nowIso,
         status: "completed",
@@ -400,13 +399,13 @@ export default function StudentTrainingFlow() {
         terms_accepted_at: termsAcceptedAt,
         metadata: {
           ...trainingMetadata,
+          user_id: userId,
           client: clientMetadata,
         },
       };
 
       const attemptFallbackPayload = {
         training_id: selectedTraining,
-        user_id: userId,
         started_at: attemptStart,
         finished_at: nowIso,
       };
@@ -597,7 +596,6 @@ export default function StudentTrainingFlow() {
 
     const attemptPayload = {
       training_id: selectedTraining,
-      user_id: userId,
       started_at: attemptStart,
       finished_at: nowIso,
       status: "completed",
@@ -606,13 +604,13 @@ export default function StudentTrainingFlow() {
       terms_accepted_at: termsAcceptedAt,
       metadata: {
         ...trainingMetadata,
+        user_id: userId,
         client: clientMetadata,
       },
     };
 
     const attemptFallbackPayload = {
       training_id: selectedTraining,
-      user_id: userId,
       started_at: attemptStart,
       finished_at: nowIso,
     };
