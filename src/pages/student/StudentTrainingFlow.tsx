@@ -692,24 +692,19 @@ export default function StudentTrainingFlow() {
               </div>
 
               <div className="border border-border rounded-lg p-6 mb-6 bg-gradient-to-br from-student-light to-white">
-                <div className="border-2 border-dashed border-student/30 rounded p-4">
-                  <Award className="w-8 h-8 text-student mx-auto mb-2" />
+                <div className="border-2 border-dashed border-student/30 rounded p-4 flex flex-col items-center justify-center text-center min-h-[200px]">
+                  <Award className="w-8 h-8 text-student mb-2" />
+
                   <p className="text-xs text-muted-foreground">
-                    Pré-visualização do certificado
+                    Você receberá seu certificado no e-mail cadastrado,
+                  </p>
+
+                  <p className="text-xs text-muted-foreground">
+                    verifique sua caixa de spam!
                   </p>
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <ButtonRole variant="outline" fullWidth>
-                  <Download className="w-4 h-4" />
-                  Baixar certificado
-                </ButtonRole>
-                <ButtonRole variant="outline" fullWidth>
-                  <Share2 className="w-4 h-4" />
-                  Compartilhar
-                </ButtonRole>
-              </div>
             </div>
 
             <ButtonRole
