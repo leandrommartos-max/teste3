@@ -440,8 +440,7 @@ export default function StudentTrainingFlow() {
                     <span className="text-foreground">Segurança do Paciente</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Versão:</span>
-                    <span className="text-foreground">2.0</span>
+                    <span className="text-muted-foreground">Nome do Instrutor:</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Data de conclusão:</span>
