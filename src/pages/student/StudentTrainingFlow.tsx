@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  FileText, 
-  Play, 
-  CheckCircle2, 
-  Award, 
-  Download, 
-  Share2, 
+import {
+  FileText,
+  Play,
+  CheckCircle2,
+  Award,
+  Download,
+  Share2,
   ChevronRight,
   Clock,
   Calendar,
-  X
+  X,
 } from "lucide-react";
 import { TopbarSticky } from "@/components/global/TopbarSticky";
 import { ButtonRole } from "@/components/ui/button-role";
@@ -60,28 +60,33 @@ const quizQuestions = [
   },
 ];
 
+type TrainingOption = {
+  value: string;
+  label: string;
+  nome_instrutor: string | null;
+  prazo_conclusao: string | null;
+  duracao_minutos: number | null;
+  descricao: string | null;
+  reference_pdf_path: string | null;
+};
+
 export default function StudentTrainingFlow() {
   const navigate = useNavigate();
+
   const [currentStage, setCurrentStage] = useState(1);
   const [selectedTraining, setSelectedTraining] = useState("");
-  const [trainingOptions, setTrainingOptions] = useState<
-    {
-      value: string;
-      label: string;
-      nome_instrutor: string | null;
-      prazo_conclusao: string | null;
-      duracao_minutos: number | null;
-      descricao: string | null;
-      reference_pdf_path: string | null;
-    }[]
-  >([]);
+
+  const [trainingOptions, setTrainingOptions] = useState<TrainingOption[]>([]);
   const [trainingsLoading, setTrainingsLoading] = useState(true);
   const [trainingsError, setTrainingsError] = useState<string | null>(null);
+
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [termsAccepted, setTermsAccepted] = useState(false);
+
   const [showCongratulations, setShowCongratulations] = useState(false);
   const [referencePdfUrl, setReferencePdfUrl] = useState<string | null>(null);
 
+  // Carrega lista de capacitações (1x)
   useEffect(() => {
     const loadTrainings = async () => {
       setTrainingsLoading(true);
@@ -102,7 +107,7 @@ export default function StudentTrainingFlow() {
         return;
       }
 
-      const options = (data ?? []).map((training) => ({
+      const options: TrainingOption[] = (data ?? []).map((training) => ({
         value: training.id,
         label: training.titulo ?? "Capacitação sem título",
         nome_instrutor: training.nome_instrutor ?? null,
@@ -116,7 +121,7 @@ export default function StudentTrainingFlow() {
       setTrainingsLoading(false);
     };
 
-    loadTrainings();
+    void loadTrainings();
   }, []);
 
   const trainingPlaceholder = trainingsLoading
@@ -127,23 +132,28 @@ export default function StudentTrainingFlow() {
     !trainingsLoading && !trainingsError && trainingOptions.length === 0
       ? "Nenhuma capacitação disponível no momento."
       : undefined;
-  const selectedTrainingLabel =
-    trainingOptions.find((training) => training.value === selectedTraining)
-      ?.label ?? "Capacitação selecionada";
+
   const selectedTrainingDetails = trainingOptions.find(
     (training) => training.value === selectedTraining,
   );
+
+  const selectedTrainingLabel =
+    selectedTrainingDetails?.label ?? "Capacitação selecionada";
+
   const prazoConclusaoDate = selectedTrainingDetails?.prazo_conclusao
     ? new Date(selectedTrainingDetails.prazo_conclusao)
     : null;
+
   const formattedPrazoConclusao =
     prazoConclusaoDate && !Number.isNaN(prazoConclusaoDate.getTime())
       ? prazoConclusaoDate.toLocaleDateString("pt-BR")
       : "Prazo não informado";
+
   const formattedDuracao = selectedTrainingDetails?.duracao_minutos
     ? `${selectedTrainingDetails.duracao_minutos} min`
     : "Duração não informada";
 
+  // Carrega URL do PDF (signedUrl) quando muda a capacitação selecionada
   useEffect(() => {
     const loadReferencePdfUrl = async () => {
       const referencePdfPath = selectedTrainingDetails?.reference_pdf_path ?? null;
@@ -153,6 +163,7 @@ export default function StudentTrainingFlow() {
         return;
       }
 
+      // se já vier URL completa, usa direto
       if (/^https?:\/\//.test(referencePdfPath)) {
         setReferencePdfUrl(referencePdfPath);
         return;
@@ -174,85 +185,12 @@ export default function StudentTrainingFlow() {
     void loadReferencePdfUrl();
   }, [selectedTrainingDetails?.reference_pdf_path]);
 
-  useEffect(() => {
-    const loadTrainings = async () => {
-      setTrainingsLoading(true);
-      setTrainingsError(null);
-
-      const { data, error } = await supabase
-        .from("trainings")
-        .select(
-          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao, reference_pdf_path",
-        )
-        .order("titulo", { ascending: true });
-
-      if (error) {
-        console.error("Erro ao carregar capacitações:", error);
-        setTrainingsError("Não foi possível carregar as capacitações.");
-        setTrainingOptions([]);
-        setTrainingsLoading(false);
-        return;
-      }
-
-      const options = (data ?? []).map((training) => ({
-        value: training.id,
-        label: training.titulo ?? "Capacitação sem título",
-        nome_instrutor: training.nome_instrutor ?? null,
-        prazo_conclusao: training.prazo_conclusao ?? null,
-        duracao_minutos: training.duracao_minutos ?? null,
-        descricao: training.descricao ?? null,
-        reference_pdf_path: training.reference_pdf_path ?? null,
-      }));
-
-      setTrainingOptions(options);
-      setTrainingsLoading(false);
-    };
-
-    loadTrainings();
-  }, []);
-
-  const trainingPlaceholder = trainingsLoading
-    ? "Carregando capacitações..."
-    : "Escolha uma capacitação";
-
-  const trainingHint =
-    !trainingsLoading && !trainingsError && trainingOptions.length === 0
-      ? "Nenhuma capacitação disponível no momento."
-      : undefined;
-  const selectedTrainingLabel =
-    trainingOptions.find((training) => training.value === selectedTraining)
-      ?.label ?? "Capacitação selecionada";
-  const selectedTrainingDetails = trainingOptions.find(
-    (training) => training.value === selectedTraining,
-  );
-  const prazoConclusaoDate = selectedTrainingDetails?.prazo_conclusao
-    ? new Date(selectedTrainingDetails.prazo_conclusao)
-    : null;
-  const formattedPrazoConclusao =
-    prazoConclusaoDate && !Number.isNaN(prazoConclusaoDate.getTime())
-      ? prazoConclusaoDate.toLocaleDateString("pt-BR")
-      : "Prazo não informado";
-  const formattedDuracao = selectedTrainingDetails?.duracao_minutos
-    ? `${selectedTrainingDetails.duracao_minutos} min`
-    : "Duração não informada";
-  const referencePdfPath = selectedTrainingDetails?.reference_pdf_path ?? null;
-  const referencePdfUrl = referencePdfPath
-    ? /^https?:\/\//.test(referencePdfPath)
-      ? referencePdfPath
-      : supabase.storage.from(STORAGE_BUCKET).getPublicUrl(referencePdfPath).data
-          .publicUrl
-    : null;
-
   const handleNext = () => {
-    if (currentStage < 5) {
-      setCurrentStage(currentStage + 1);
-    }
+    if (currentStage < 5) setCurrentStage((s) => s + 1);
   };
 
   const handleBack = () => {
-    if (currentStage > 1) {
-      setCurrentStage(currentStage - 1);
-    }
+    if (currentStage > 1) setCurrentStage((s) => s - 1);
   };
 
   const handleFinish = () => {
@@ -267,8 +205,12 @@ export default function StudentTrainingFlow() {
   const renderProgress = () => (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-muted-foreground">Etapa {currentStage} de 5</span>
-        <span className="text-sm font-medium text-foreground">{stages[currentStage - 1].name}</span>
+        <span className="text-sm text-muted-foreground">
+          Etapa {currentStage} de 5
+        </span>
+        <span className="text-sm font-medium text-foreground">
+          {stages[currentStage - 1].name}
+        </span>
       </div>
       <div className="flex gap-2">
         {stages.map((stage) => (
@@ -278,8 +220,8 @@ export default function StudentTrainingFlow() {
               stage.id < currentStage
                 ? "bg-success"
                 : stage.id === currentStage
-                ? "bg-student"
-                : "bg-muted"
+                  ? "bg-student"
+                  : "bg-muted"
             }`}
           />
         ))}
@@ -308,7 +250,7 @@ export default function StudentTrainingFlow() {
                 <h3 className="font-display font-semibold text-lg text-foreground">
                   {selectedTrainingLabel}
                 </h3>
-                
+
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <FileText className="w-4 h-4" />
@@ -318,10 +260,12 @@ export default function StudentTrainingFlow() {
                         : "Instrutor não informado"}
                     </span>
                   </div>
+
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-4 h-4" />
                     <span>Prazo: {formattedPrazoConclusao}</span>
                   </div>
+
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="w-4 h-4" />
                     <span>Duração: {formattedDuracao}</span>
@@ -334,7 +278,12 @@ export default function StudentTrainingFlow() {
                     : "Descrição não informada."}
                 </p>
 
-                <ButtonRole variant="student" fullWidth onClick={handleNext}>
+                <ButtonRole
+                  variant="student"
+                  fullWidth
+                  onClick={handleNext}
+                  disabled={!selectedTraining}
+                >
                   Iniciar capacitação
                   <ChevronRight className="w-4 h-4" />
                 </ButtonRole>
@@ -348,7 +297,9 @@ export default function StudentTrainingFlow() {
           <div className="space-y-6">
             {/* Document */}
             <div className="card-institutional p-5">
-              <h4 className="font-medium text-foreground mb-3">Material de estudo</h4>
+              <h4 className="font-medium text-foreground mb-3">
+                Material de estudo
+              </h4>
               <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
                 <FileText className="w-10 h-10 text-primary" />
                 <div className="flex-1">
@@ -376,7 +327,9 @@ export default function StudentTrainingFlow() {
 
             {/* Video */}
             <div className="card-institutional p-5">
-              <h4 className="font-medium text-foreground mb-3">Vídeo explicativo</h4>
+              <h4 className="font-medium text-foreground mb-3">
+                Vídeo explicativo
+              </h4>
               <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
                 <div className="text-center">
                   <div className="w-16 h-16 rounded-full bg-student flex items-center justify-center mx-auto mb-3">
@@ -402,7 +355,9 @@ export default function StudentTrainingFlow() {
         return (
           <div className="space-y-6">
             <div className="card-institutional p-5">
-              <h4 className="font-medium text-foreground mb-4">Avaliação de conhecimentos</h4>
+              <h4 className="font-medium text-foreground mb-4">
+                Avaliação de conhecimentos
+              </h4>
               <p className="text-sm text-muted-foreground mb-6">
                 Responda às questões abaixo para validar seu aprendizado.
               </p>
@@ -423,10 +378,14 @@ export default function StudentTrainingFlow() {
                             type="radio"
                             name={`question_${q.id}`}
                             checked={quizAnswers[q.id] === oIndex}
-                            onChange={() => setQuizAnswers({ ...quizAnswers, [q.id]: oIndex })}
+                            onChange={() =>
+                              setQuizAnswers({ ...quizAnswers, [q.id]: oIndex })
+                            }
                             className="mt-0.5 w-4 h-4 text-student"
                           />
-                          <span className="text-sm text-foreground">{option}</span>
+                          <span className="text-sm text-foreground">
+                            {option}
+                          </span>
                         </label>
                       ))}
                     </div>
@@ -439,9 +398,9 @@ export default function StudentTrainingFlow() {
               <ButtonRole variant="outline" fullWidth onClick={handleBack}>
                 Voltar
               </ButtonRole>
-              <ButtonRole 
-                variant="student" 
-                fullWidth 
+              <ButtonRole
+                variant="student"
+                fullWidth
                 onClick={handleNext}
                 disabled={Object.keys(quizAnswers).length < quizQuestions.length}
               >
@@ -455,28 +414,31 @@ export default function StudentTrainingFlow() {
         return (
           <div className="space-y-6">
             <div className="card-institutional p-5">
-              <h4 className="font-medium text-foreground mb-4">Termo de ciência</h4>
-              
+              <h4 className="font-medium text-foreground mb-4">
+                Termo de ciência
+              </h4>
+
               <div className="h-64 overflow-y-auto p-4 bg-muted rounded-lg text-sm text-muted-foreground mb-4">
                 <p className="mb-4">
                   Eu, colaborador(a) da Prefeitura Municipal de Paulínia, declaro que:
                 </p>
                 <ol className="list-decimal list-inside space-y-2">
                   <li>
-                    Concluí integralmente o conteúdo da capacitação "Segurança do Paciente".
+                    Concluí integralmente o conteúdo da capacitação "Segurança do
+                    Paciente".
                   </li>
                   <li>
                     Compreendi os conceitos, procedimentos e diretrizes apresentados.
                   </li>
                   <li>
-                    Me comprometo a aplicar os conhecimentos adquiridos em minhas atividades profissionais.
+                    Me comprometo a aplicar os conhecimentos adquiridos em minhas
+                    atividades profissionais.
                   </li>
                   <li>
-                    Estou ciente de que este registro será mantido para fins de auditoria institucional.
+                    Estou ciente de que este registro será mantido para fins de
+                    auditoria institucional.
                   </li>
-                  <li>
-                    Reconheço que o certificado emitido possui validade institucional.
-                  </li>
+                  <li>Reconheço que o certificado emitido possui validade institucional.</li>
                 </ol>
                 <p className="mt-4">
                   Este termo é assinado eletronicamente através da confirmação abaixo.
@@ -500,9 +462,9 @@ export default function StudentTrainingFlow() {
               <ButtonRole variant="outline" fullWidth onClick={handleBack}>
                 Voltar
               </ButtonRole>
-              <ButtonRole 
-                variant="student" 
-                fullWidth 
+              <ButtonRole
+                variant="student"
+                fullWidth
                 onClick={handleNext}
                 disabled={!termsAccepted}
               >
@@ -519,9 +481,11 @@ export default function StudentTrainingFlow() {
               <div className="w-20 h-20 rounded-full gradient-student flex items-center justify-center mx-auto mb-4">
                 <Award className="w-10 h-10 text-white" />
               </div>
+
               <h3 className="font-display text-xl font-bold text-foreground mb-2">
                 Capacitação concluída!
               </h3>
+
               <p className="text-muted-foreground mb-6">
                 Parabéns por completar a capacitação Segurança do Paciente.
               </p>
@@ -534,13 +498,21 @@ export default function StudentTrainingFlow() {
                     <span className="text-muted-foreground">Capacitação:</span>
                     <span className="text-foreground">Segurança do Paciente</span>
                   </div>
+
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Nome do Instrutor:</span>
+                    <span className="text-foreground">
+                      {selectedTrainingDetails?.nome_instrutor ?? "Não informado"}
+                    </span>
                   </div>
+
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Data de conclusão:</span>
-                    <span className="text-foreground">26/01/2026</span>
+                    <span className="text-foreground">
+                      {new Date().toLocaleDateString("pt-BR")}
+                    </span>
                   </div>
+
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Status:</span>
                     <span className="chip-success">Aprovado</span>
@@ -552,7 +524,9 @@ export default function StudentTrainingFlow() {
               <div className="border border-border rounded-lg p-6 mb-6 bg-gradient-to-br from-student-light to-white">
                 <div className="border-2 border-dashed border-student/30 rounded p-4">
                   <Award className="w-8 h-8 text-student mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground">Pré-visualização do certificado</p>
+                  <p className="text-xs text-muted-foreground">
+                    Pré-visualização do certificado
+                  </p>
                 </div>
               </div>
 
@@ -582,7 +556,7 @@ export default function StudentTrainingFlow() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <TopbarSticky 
+      <TopbarSticky
         title={selectedTraining ? "Capacitação" : "Selecionar Capacitação"}
         backTo="/aluno/dashboard"
       />
@@ -597,25 +571,27 @@ export default function StudentTrainingFlow() {
       {/* Congratulations Modal */}
       {showCongratulations && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-xl p-8 max-w-md w-full text-center animate-fade-in">
+          <div className="relative bg-card rounded-xl p-8 max-w-md w-full text-center animate-fade-in">
             <button
               onClick={handleCloseCongratulations}
               className="absolute top-4 right-4 p-2 rounded-lg hover:bg-muted transition-colors"
+              aria-label="Fechar"
             >
               <X className="w-5 h-5" />
             </button>
-            
+
             <div className="w-24 h-24 rounded-full gradient-student flex items-center justify-center mx-auto mb-6">
               <Award className="w-12 h-12 text-white" />
             </div>
-            
+
             <h2 className="font-display text-2xl font-bold text-foreground mb-3">
               Parabéns!
             </h2>
+
             <p className="text-muted-foreground mb-6">
               Capacitação concluída e registrada para fins institucionais.
             </p>
-            
+
             <ButtonRole variant="student" fullWidth onClick={handleCloseCongratulations}>
               Fechar
             </ButtonRole>
