@@ -339,7 +339,6 @@ export default function StudentTrainingFlow() {
           training_id: selectedTraining,
           question_id: question.id,
           option_id: selectedOption?.id ?? null,
-          selected_option_key: selectedKey ?? null,
           user_id: userId,
         };
       });
@@ -350,24 +349,16 @@ export default function StudentTrainingFlow() {
         return;
       }
 
-      const minimalAnswersPayload = answersPayload.map(
-        ({ selected_option_key: _selectedOptionKey, ...rest }) => rest,
-      );
       const keyOnlyPayload = answersPayload.map(
-        ({ option_id: _optionId, ...rest }) => rest,
+        ({ option_id: _optionId, ...rest }) => ({
+          ...rest,
+          selected_option_key: quizAnswers[String(rest.question_id)],
+        }),
       );
-
-      let answerError = null;
 
       let { error } = await supabase
         .from(TRAINING_ANSWERS_TABLE)
         .upsert(answersPayload, { onConflict: "user_id,question_id" });
-
-      if (error) {
-        ({ error } = await supabase
-          .from(TRAINING_ANSWERS_TABLE)
-          .upsert(minimalAnswersPayload, { onConflict: "user_id,question_id" }));
-      }
 
       if (error?.message?.includes("option_id")) {
         ({ error } = await supabase
@@ -375,12 +366,10 @@ export default function StudentTrainingFlow() {
           .upsert(keyOnlyPayload, { onConflict: "user_id,question_id" }));
       }
 
-      answerError = error;
-
-      if (answerError) {
-        console.error("Erro ao salvar respostas:", answerError);
+      if (error) {
+        console.error("Erro ao salvar respostas:", error);
         const fallbackMessage =
-          answerError.message || answerError.details || "Erro desconhecido.";
+          error.message || error.details || "Erro desconhecido.";
         setSubmissionError(
           `Não foi possível enviar suas respostas. Detalhes: ${fallbackMessage}`,
         );
