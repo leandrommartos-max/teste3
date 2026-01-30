@@ -332,7 +332,11 @@ export default function AdminTrainingCreate() {
   };
 
   const uploadFile = async (file: File, folder: string) => {
-    const safeName = file.name.replaceAll(" ", "_");
+    const normalizedName = file.name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w.-]+/g, "_");
+    const safeName = normalizedName || `arquivo_${Date.now()}`;
     const filePath = `${folder}/${crypto.randomUUID()}-${safeName}`;
 
     const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(filePath, file, {
