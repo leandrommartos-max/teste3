@@ -68,6 +68,8 @@ type TrainingOption = {
   duracao_minutos: number | null;
   descricao: string | null;
   reference_pdf_path: string | null;
+  cover_image_path: string | null;
+  link_video: string | null;
 };
 
 export default function StudentTrainingFlow() {
@@ -75,21 +77,6 @@ export default function StudentTrainingFlow() {
 
   const [currentStage, setCurrentStage] = useState(1);
   const [selectedTraining, setSelectedTraining] = useState("");
-  const [trainingOptions, setTrainingOptions] = useState<
-    {
-      value: string;
-      label: string;
-      nome_instrutor: string | null;
-      prazo_conclusao: string | null;
-      duracao_minutos: number | null;
-      descricao: string | null;
-      reference_pdf_path: string | null;
-      cover_image_path: string | null;
-      link_video: string | null;
-    }[]
-  >([]);
-  const [trainingsLoading, setTrainingsLoading] = useState(true);
-  const [trainingsError, setTrainingsError] = useState<string | null>(null);
 
   const [trainingOptions, setTrainingOptions] = useState<TrainingOption[]>([]);
   const [trainingsLoading, setTrainingsLoading] = useState(true);
@@ -99,7 +86,9 @@ export default function StudentTrainingFlow() {
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [showCongratulations, setShowCongratulations] = useState(false);
+
   const [referencePdfUrl, setReferencePdfUrl] = useState<string | null>(null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
 
   // Carrega lista de capacitações (1x)
   useEffect(() => {
@@ -110,7 +99,7 @@ export default function StudentTrainingFlow() {
       const { data, error } = await supabase
         .from("trainings")
         .select(
-          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao, reference_pdf_path",
+          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao, reference_pdf_path, cover_image_path, link_video",
         )
         .order("titulo", { ascending: true });
 
@@ -122,7 +111,6 @@ export default function StudentTrainingFlow() {
         return;
       }
 
-      const options = (data ?? []).map((training) => ({
       const options: TrainingOption[] = (data ?? []).map((training) => ({
         value: training.id,
         label: training.titulo ?? "Capacitação sem título",
@@ -139,7 +127,7 @@ export default function StudentTrainingFlow() {
       setTrainingsLoading(false);
     };
 
-    loadTrainings();
+    void loadTrainings();
   }, []);
 
   const trainingPlaceholder = trainingsLoading
@@ -150,15 +138,18 @@ export default function StudentTrainingFlow() {
     !trainingsLoading && !trainingsError && trainingOptions.length === 0
       ? "Nenhuma capacitação disponível no momento."
       : undefined;
-  const selectedTrainingLabel =
-    trainingOptions.find((training) => training.value === selectedTraining)
-      ?.label ?? "Capacitação selecionada";
+
   const selectedTrainingDetails = trainingOptions.find(
     (training) => training.value === selectedTraining,
   );
+
+  const selectedTrainingLabel =
+    selectedTrainingDetails?.label ?? "Capacitação selecionada";
+
   const prazoConclusaoDate = selectedTrainingDetails?.prazo_conclusao
     ? new Date(selectedTrainingDetails.prazo_conclusao)
     : null;
+
   const formattedPrazoConclusao =
     prazoConclusaoDate && !Number.isNaN(prazoConclusaoDate.getTime())
       ? prazoConclusaoDate.toLocaleDateString("pt-BR")
@@ -178,7 +169,6 @@ export default function StudentTrainingFlow() {
         return;
       }
 
-      // se já vier URL completa, usa direto
       if (/^https?:\/\//.test(referencePdfPath)) {
         setReferencePdfUrl(referencePdfPath);
         return;
@@ -200,6 +190,7 @@ export default function StudentTrainingFlow() {
     void loadReferencePdfUrl();
   }, [selectedTrainingDetails?.reference_pdf_path]);
 
+  // Carrega URL da capa (signedUrl) quando muda a capacitação selecionada
   useEffect(() => {
     const loadCoverImageUrl = async () => {
       const coverImagePath = selectedTrainingDetails?.cover_image_path ?? null;
@@ -340,7 +331,6 @@ export default function StudentTrainingFlow() {
       case 2:
         return (
           <div className="space-y-6">
-            {/* Document */}
             <div className="card-institutional p-5">
               <h4 className="font-medium text-foreground mb-3">
                 Material de estudo
@@ -370,9 +360,9 @@ export default function StudentTrainingFlow() {
               </div>
             </div>
 
-            {/* Video */}
             <div className="card-institutional p-5">
               <h4 className="font-medium text-foreground mb-3">Vídeo explicativo</h4>
+
               <div className="aspect-video bg-muted rounded-lg overflow-hidden">
                 {coverImageUrl ? (
                   <button
@@ -388,6 +378,7 @@ export default function StudentTrainingFlow() {
                     }}
                     className="relative h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     disabled={!selectedTrainingDetails?.link_video}
+                    aria-label="Abrir vídeo"
                   >
                     <img
                       src={coverImageUrl}
@@ -461,9 +452,7 @@ export default function StudentTrainingFlow() {
                             }
                             className="mt-0.5 w-4 h-4 text-student"
                           />
-                          <span className="text-sm text-foreground">
-                            {option}
-                          </span>
+                          <span className="text-sm text-foreground">{option}</span>
                         </label>
                       ))}
                     </div>
@@ -492,30 +481,17 @@ export default function StudentTrainingFlow() {
         return (
           <div className="space-y-6">
             <div className="card-institutional p-5">
-              <h4 className="font-medium text-foreground mb-4">
-                Termo de ciência
-              </h4>
+              <h4 className="font-medium text-foreground mb-4">Termo de ciência</h4>
 
               <div className="h-64 overflow-y-auto p-4 bg-muted rounded-lg text-sm text-muted-foreground mb-4">
                 <p className="mb-4">
                   Eu, colaborador(a) da Prefeitura Municipal de Paulínia, declaro que:
                 </p>
                 <ol className="list-decimal list-inside space-y-2">
-                  <li>
-                    Concluí integralmente o conteúdo da capacitação "Segurança do
-                    Paciente".
-                  </li>
-                  <li>
-                    Compreendi os conceitos, procedimentos e diretrizes apresentados.
-                  </li>
-                  <li>
-                    Me comprometo a aplicar os conhecimentos adquiridos em minhas
-                    atividades profissionais.
-                  </li>
-                  <li>
-                    Estou ciente de que este registro será mantido para fins de
-                    auditoria institucional.
-                  </li>
+                  <li>Concluí integralmente o conteúdo da capacitação "Segurança do Paciente".</li>
+                  <li>Compreendi os conceitos, procedimentos e diretrizes apresentados.</li>
+                  <li>Me comprometo a aplicar os conhecimentos adquiridos em minhas atividades profissionais.</li>
+                  <li>Estou ciente de que este registro será mantido para fins de auditoria institucional.</li>
                   <li>Reconheço que o certificado emitido possui validade institucional.</li>
                 </ol>
                 <p className="mt-4">
@@ -568,7 +544,6 @@ export default function StudentTrainingFlow() {
                 Parabéns por completar a capacitação Segurança do Paciente.
               </p>
 
-              {/* Summary */}
               <div className="bg-muted rounded-lg p-4 text-left mb-6">
                 <h4 className="font-medium text-foreground mb-3">Resumo</h4>
                 <div className="space-y-2 text-sm">
@@ -598,7 +573,6 @@ export default function StudentTrainingFlow() {
                 </div>
               </div>
 
-              {/* Certificate preview */}
               <div className="border border-border rounded-lg p-6 mb-6 bg-gradient-to-br from-student-light to-white">
                 <div className="border-2 border-dashed border-student/30 rounded p-4">
                   <Award className="w-8 h-8 text-student mx-auto mb-2" />
@@ -608,7 +582,6 @@ export default function StudentTrainingFlow() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
                 <ButtonRole variant="outline" fullWidth>
                   <Download className="w-4 h-4" />
@@ -646,7 +619,6 @@ export default function StudentTrainingFlow() {
         </div>
       </main>
 
-      {/* Congratulations Modal */}
       {showCongratulations && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="relative bg-card rounded-xl p-8 max-w-md w-full text-center animate-fade-in">
@@ -670,7 +642,11 @@ export default function StudentTrainingFlow() {
               Capacitação concluída e registrada para fins institucionais.
             </p>
 
-            <ButtonRole variant="student" fullWidth onClick={handleCloseCongratulations}>
+            <ButtonRole
+              variant="student"
+              fullWidth
+              onClick={handleCloseCongratulations}
+            >
               Fechar
             </ButtonRole>
           </div>
@@ -679,3 +655,4 @@ export default function StudentTrainingFlow() {
     </div>
   );
 }
+
