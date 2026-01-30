@@ -48,6 +48,7 @@ type TrainingOption = {
   prazo_conclusao: string | null;
   duracao_minutos: number | null;
   descricao: string | null;
+  texto_termo: string | null;
   reference_pdf_path: string | null;
   cover_image_path: string | null;
   link_video: string | null;
@@ -76,6 +77,8 @@ export default function StudentTrainingFlow() {
 
   const [referencePdfUrl, setReferencePdfUrl] = useState<string | null>(null);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const defaultTermText =
+    "Eu, colaborador(a) da Prefeitura Municipal de Paulínia, declaro que:\n\n1. Concluí integralmente o conteúdo da capacitação.\n2. Compreendi os conceitos, procedimentos e diretrizes apresentados.\n3. Me comprometo a aplicar os conhecimentos adquiridos em minhas atividades profissionais.\n4. Estou ciente de que este registro será mantido para fins de auditoria institucional.\n5. Reconheço que o certificado emitido possui validade institucional.\n\nEste termo é assinado eletronicamente através da confirmação abaixo.";
 
   // Carrega lista de capacitações (1x)
   useEffect(() => {
@@ -86,7 +89,7 @@ export default function StudentTrainingFlow() {
       const { data, error } = await supabase
         .from("trainings")
         .select(
-          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao, reference_pdf_path, cover_image_path, link_video",
+          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao, texto_termo, reference_pdf_path, cover_image_path, link_video",
         )
         .order("titulo", { ascending: true });
 
@@ -105,6 +108,7 @@ export default function StudentTrainingFlow() {
         prazo_conclusao: training.prazo_conclusao ?? null,
         duracao_minutos: training.duracao_minutos ?? null,
         descricao: training.descricao ?? null,
+        texto_termo: training.texto_termo ?? null,
         reference_pdf_path: training.reference_pdf_path ?? null,
         cover_image_path: training.cover_image_path ?? null,
         link_video: training.link_video ?? null,
@@ -609,20 +613,8 @@ export default function StudentTrainingFlow() {
             <div className="card-institutional p-5">
               <h4 className="font-medium text-foreground mb-4">Termo de ciência</h4>
 
-              <div className="h-64 overflow-y-auto p-4 bg-muted rounded-lg text-sm text-muted-foreground mb-4">
-                <p className="mb-4">
-                  Eu, colaborador(a) da Prefeitura Municipal de Paulínia, declaro que:
-                </p>
-                <ol className="list-decimal list-inside space-y-2">
-                  <li>Concluí integralmente o conteúdo da capacitação "Segurança do Paciente".</li>
-                  <li>Compreendi os conceitos, procedimentos e diretrizes apresentados.</li>
-                  <li>Me comprometo a aplicar os conhecimentos adquiridos em minhas atividades profissionais.</li>
-                  <li>Estou ciente de que este registro será mantido para fins de auditoria institucional.</li>
-                  <li>Reconheço que o certificado emitido possui validade institucional.</li>
-                </ol>
-                <p className="mt-4">
-                  Este termo é assinado eletronicamente através da confirmação abaixo.
-                </p>
+              <div className="h-64 overflow-y-auto p-4 bg-muted rounded-lg text-sm text-muted-foreground mb-4 whitespace-pre-line">
+                {selectedTrainingDetails?.texto_termo?.trim() || defaultTermText}
               </div>
 
               <label className="flex items-start gap-3 p-4 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors">
