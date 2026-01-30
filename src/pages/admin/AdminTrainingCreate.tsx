@@ -56,8 +56,7 @@ export default function AdminTrainingCreate() {
   const [referenceManager, setReferenceManager] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
   const [instructorName, setInstructorName] = useState("");
-  const [version, setVersion] = useState("");
-
+  
   // Media
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [videoLink, setVideoLink] = useState("");
@@ -398,7 +397,6 @@ export default function AdminTrainingCreate() {
         duracao_minutos: durationMinutes ? Number(durationMinutes) : null,
         nome_instrutor: referenceManager,
         instructor_name: instructorName,
-        version,
         cover_image_path: coverImagePath,
         link_video: videoLink,
         prazo_conclusao: completionDeadline || null,
