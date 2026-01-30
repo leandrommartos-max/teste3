@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   FileText, 
@@ -15,12 +15,9 @@ import {
 import { TopbarSticky } from "@/components/global/TopbarSticky";
 import { ButtonRole } from "@/components/ui/button-role";
 import { SelectField } from "@/components/ui/select-field";
+import { supabase } from "@/lib/supabaseClient";
 
-const trainings = [
-  { value: "seguranca_paciente", label: "Segurança do Paciente" },
-  { value: "nr32", label: "NR-32 - Segurança e Saúde no Trabalho" },
-  { value: "lgpd", label: "LGPD na Saúde" },
-];
+const STORAGE_BUCKET = "training-documents";
 
 const stages = [
   { id: 1, name: "Detalhes", icon: FileText },
@@ -67,9 +64,150 @@ export default function StudentTrainingFlow() {
   const navigate = useNavigate();
   const [currentStage, setCurrentStage] = useState(1);
   const [selectedTraining, setSelectedTraining] = useState("");
+  const [trainingOptions, setTrainingOptions] = useState<
+    {
+      value: string;
+      label: string;
+      nome_instrutor: string | null;
+      prazo_conclusao: string | null;
+      duracao_minutos: number | null;
+      descricao: string | null;
+      reference_pdf_path: string | null;
+      cover_image_path: string | null;
+      link_video: string | null;
+    }[]
+  >([]);
+  const [trainingsLoading, setTrainingsLoading] = useState(true);
+  const [trainingsError, setTrainingsError] = useState<string | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showCongratulations, setShowCongratulations] = useState(false);
+  const [referencePdfUrl, setReferencePdfUrl] = useState<string | null>(null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadTrainings = async () => {
+      setTrainingsLoading(true);
+      setTrainingsError(null);
+
+      const { data, error } = await supabase
+        .from("trainings")
+        .select(
+          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao, reference_pdf_path, cover_image_path, link_video",
+        )
+        .order("titulo", { ascending: true });
+
+      if (error) {
+        console.error("Erro ao carregar capacitações:", error);
+        setTrainingsError("Não foi possível carregar as capacitações.");
+        setTrainingOptions([]);
+        setTrainingsLoading(false);
+        return;
+      }
+
+      const options = (data ?? []).map((training) => ({
+        value: training.id,
+        label: training.titulo ?? "Capacitação sem título",
+        nome_instrutor: training.nome_instrutor ?? null,
+        prazo_conclusao: training.prazo_conclusao ?? null,
+        duracao_minutos: training.duracao_minutos ?? null,
+        descricao: training.descricao ?? null,
+        reference_pdf_path: training.reference_pdf_path ?? null,
+        cover_image_path: training.cover_image_path ?? null,
+        link_video: training.link_video ?? null,
+      }));
+
+      setTrainingOptions(options);
+      setTrainingsLoading(false);
+    };
+
+    loadTrainings();
+  }, []);
+
+  const trainingPlaceholder = trainingsLoading
+    ? "Carregando capacitações..."
+    : "Escolha uma capacitação";
+
+  const trainingHint =
+    !trainingsLoading && !trainingsError && trainingOptions.length === 0
+      ? "Nenhuma capacitação disponível no momento."
+      : undefined;
+  const selectedTrainingLabel =
+    trainingOptions.find((training) => training.value === selectedTraining)
+      ?.label ?? "Capacitação selecionada";
+  const selectedTrainingDetails = trainingOptions.find(
+    (training) => training.value === selectedTraining,
+  );
+  const prazoConclusaoDate = selectedTrainingDetails?.prazo_conclusao
+    ? new Date(selectedTrainingDetails.prazo_conclusao)
+    : null;
+  const formattedPrazoConclusao =
+    prazoConclusaoDate && !Number.isNaN(prazoConclusaoDate.getTime())
+      ? prazoConclusaoDate.toLocaleDateString("pt-BR")
+      : "Prazo não informado";
+  const formattedDuracao = selectedTrainingDetails?.duracao_minutos
+    ? `${selectedTrainingDetails.duracao_minutos} min`
+    : "Duração não informada";
+
+  useEffect(() => {
+    const loadReferencePdfUrl = async () => {
+      const referencePdfPath = selectedTrainingDetails?.reference_pdf_path ?? null;
+
+      if (!referencePdfPath) {
+        setReferencePdfUrl(null);
+        return;
+      }
+
+      if (/^https?:\/\//.test(referencePdfPath)) {
+        setReferencePdfUrl(referencePdfPath);
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(referencePdfPath, 60 * 60);
+
+      if (error) {
+        console.error("Erro ao gerar URL do PDF:", error);
+        setReferencePdfUrl(null);
+        return;
+      }
+
+      setReferencePdfUrl(data?.signedUrl ?? null);
+    };
+
+    void loadReferencePdfUrl();
+  }, [selectedTrainingDetails?.reference_pdf_path]);
+
+  useEffect(() => {
+    const loadCoverImageUrl = async () => {
+      const coverImagePath = selectedTrainingDetails?.cover_image_path ?? null;
+
+      if (!coverImagePath) {
+        setCoverImageUrl(null);
+        return;
+      }
+
+      if (/^https?:\/\//.test(coverImagePath)) {
+        setCoverImageUrl(coverImagePath);
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(coverImagePath, 60 * 60);
+
+      if (error) {
+        console.error("Erro ao gerar URL da capa:", error);
+        setCoverImageUrl(null);
+        return;
+      }
+
+      setCoverImageUrl(data?.signedUrl ?? null);
+    };
+
+    void loadCoverImageUrl();
+  }, [selectedTrainingDetails?.cover_image_path]);
 
   const handleNext = () => {
     if (currentStage < 5) {
@@ -122,36 +260,44 @@ export default function StudentTrainingFlow() {
           <div className="space-y-6">
             <SelectField
               label="Selecione a capacitação"
-              options={trainings}
+              options={trainingOptions}
               value={selectedTraining}
               onChange={(e) => setSelectedTraining(e.target.value)}
-              placeholder="Escolha uma capacitação"
+              placeholder={trainingPlaceholder}
+              hint={trainingHint}
+              error={trainingsError ?? undefined}
+              disabled={trainingsLoading || trainingOptions.length === 0}
             />
 
             {selectedTraining && (
               <div className="card-institutional p-5 space-y-4">
                 <h3 className="font-display font-semibold text-lg text-foreground">
-                  Segurança do Paciente
+                  {selectedTrainingLabel}
                 </h3>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <FileText className="w-4 h-4" />
-                    <span>Versão 2.0</span>
+                    <span>
+                      {selectedTrainingDetails?.nome_instrutor
+                        ? selectedTrainingDetails.nome_instrutor
+                        : "Instrutor não informado"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    <span>Prazo: 30/01/2024</span>
+                    <span>Prazo: {formattedPrazoConclusao}</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="w-4 h-4" />
-                    <span>Duração: 45 min</span>
+                    <span>Duração: {formattedDuracao}</span>
                   </div>
                 </div>
 
                 <p className="text-sm text-muted-foreground">
-                  Esta capacitação aborda os princípios fundamentais de segurança do paciente 
-                  conforme diretrizes do Ministério da Saúde e OMS.
+                  {selectedTrainingDetails?.descricao
+                    ? selectedTrainingDetails.descricao
+                    : "Descrição não informada."}
                 </p>
 
                 <ButtonRole variant="student" fullWidth onClick={handleNext}>
@@ -172,10 +318,23 @@ export default function StudentTrainingFlow() {
               <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
                 <FileText className="w-10 h-10 text-primary" />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">Apostila - Segurança do Paciente</p>
-                  <p className="text-sm text-muted-foreground">PDF • 2.5 MB</p>
+                  <p className="font-medium text-foreground">
+                    Apostila - {selectedTrainingLabel}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {referencePdfUrl ? "PDF disponível" : "PDF não informado"}
+                  </p>
                 </div>
-                <ButtonRole variant="outline" size="sm">
+                <ButtonRole
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (referencePdfUrl) {
+                      window.open(referencePdfUrl, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  disabled={!referencePdfUrl}
+                >
                   Abrir
                 </ButtonRole>
               </div>
@@ -184,13 +343,48 @@ export default function StudentTrainingFlow() {
             {/* Video */}
             <div className="card-institutional p-5">
               <h4 className="font-medium text-foreground mb-3">Vídeo explicativo</h4>
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-student flex items-center justify-center mx-auto mb-3">
-                    <Play className="w-8 h-8 text-white ml-1" />
+              <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                {coverImageUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedTrainingDetails?.link_video) {
+                        window.open(
+                          selectedTrainingDetails.link_video,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }
+                    }}
+                    className="relative h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    disabled={!selectedTrainingDetails?.link_video}
+                  >
+                    <img
+                      src={coverImageUrl}
+                      alt={`Capa do vídeo ${selectedTrainingLabel}`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-student flex items-center justify-center">
+                        <Play className="w-8 h-8 text-white ml-1" />
+                      </div>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-16 h-16 rounded-full bg-student flex items-center justify-center mx-auto mb-3">
+                        <Play className="w-8 h-8 text-white ml-1" />
+                      </div>
+                      <p className="text-muted-foreground">
+                        {selectedTrainingDetails?.link_video
+                          ? "Clique para assistir"
+                          : "Vídeo não informado"}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-muted-foreground">Clique para assistir</p>
-                </div>
+                )}
               </div>
             </div>
 
