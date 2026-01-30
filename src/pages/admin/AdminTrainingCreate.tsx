@@ -396,7 +396,6 @@ export default function AdminTrainingCreate() {
       const payload = {
         titulo: title,
         descricao: description,
-        reference_manager: referenceManager,
         duracao_minutos: durationMinutes ? Number(durationMinutes) : null,
         nome_instrutor: referenceManager,
         instructor_name: instructorName,
