@@ -109,6 +109,9 @@ export default function StudentTrainingFlow() {
     !trainingsLoading && !trainingsError && trainingOptions.length === 0
       ? "Nenhuma capacitação disponível no momento."
       : undefined;
+  const selectedTrainingLabel =
+    trainingOptions.find((training) => training.value === selectedTraining)
+      ?.label ?? "Capacitação selecionada";
 
   const handleNext = () => {
     if (currentStage < 5) {
@@ -173,7 +176,7 @@ export default function StudentTrainingFlow() {
             {selectedTraining && (
               <div className="card-institutional p-5 space-y-4">
                 <h3 className="font-display font-semibold text-lg text-foreground">
-                  Segurança do Paciente
+                  {selectedTrainingLabel}
                 </h3>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
