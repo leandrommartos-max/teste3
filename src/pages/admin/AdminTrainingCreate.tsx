@@ -354,6 +354,15 @@ export default function AdminTrainingCreate() {
     }
 
     if ("message" in error && typeof error.message === "string" && error.message.trim()) {
+      const message = error.message;
+      if (message.includes("Could not find the") && message.includes("column of 'trainings'")) {
+        const match = message.match(/'([^']+)' column of 'trainings'/);
+        const column = match?.[1];
+        return column
+          ? `A coluna '${column}' não existe na tabela trainings. Crie essa coluna no Supabase ou rode a migration correspondente.`
+          : "Uma coluna usada no cadastro não existe na tabela trainings. Crie a coluna no Supabase ou rode a migration correspondente.";
+      }
+
       const details =
         "details" in error && typeof error.details === "string" && error.details.trim()
           ? ` (${error.details})`
@@ -367,7 +376,7 @@ export default function AdminTrainingCreate() {
           ? ` [${error.code}]`
           : "";
 
-      return `${error.message}${details}${hint}${code}`;
+      return `${message}${details}${hint}${code}`;
     }
 
     return "Erro ao salvar capacitação.";
