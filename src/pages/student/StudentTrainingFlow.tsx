@@ -27,38 +27,19 @@ const stages = [
   { id: 5, name: "Conclusão", icon: Award },
 ];
 
-const quizQuestions = [
-  {
-    id: 1,
-    question: "Qual é o principal objetivo da Segurança do Paciente?",
-    options: [
-      "Reduzir custos hospitalares",
-      "Prevenir danos evitáveis ao paciente",
-      "Aumentar a velocidade do atendimento",
-      "Diminuir o número de funcionários",
-    ],
-  },
-  {
-    id: 2,
-    question: "Quais são os 6 protocolos básicos de Segurança do Paciente?",
-    options: [
-      "Identificação, comunicação, medicação, cirurgia segura, quedas, lesões por pressão",
-      "Higiene, alimentação, repouso, medicação, exercícios, sono",
-      "Triagem, internação, medicação, alta, retorno, acompanhamento",
-      "Recepção, consulta, exames, diagnóstico, tratamento, cura",
-    ],
-  },
-  {
-    id: 3,
-    question: "A identificação correta do paciente deve ser feita através de:",
-    options: [
-      "Apenas pelo nome do paciente",
-      "Pelo número do leito",
-      "Por pelo menos dois identificadores",
-      "Pela cor da pulseira",
-    ],
-  },
-];
+const TRAINING_ANSWERS_TABLE = "training_question_answers";
+
+type TrainingQuestionOption = {
+  id: number | string;
+  option_key: string;
+  option_text: string;
+};
+
+type TrainingQuestion = {
+  id: number | string;
+  question_text: string;
+  options: TrainingQuestionOption[];
+};
 
 type TrainingOption = {
   value: string;
@@ -82,7 +63,13 @@ export default function StudentTrainingFlow() {
   const [trainingsLoading, setTrainingsLoading] = useState(true);
   const [trainingsError, setTrainingsError] = useState<string | null>(null);
 
-  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
+  const [quizQuestions, setQuizQuestions] = useState<TrainingQuestion[]>([]);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizError, setQuizError] = useState<string | null>(null);
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
+  const [isSubmittingAnswers, setIsSubmittingAnswers] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [showCongratulations, setShowCongratulations] = useState(false);
@@ -128,6 +115,24 @@ export default function StudentTrainingFlow() {
     };
 
     void loadTrainings();
+  }, []);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("Erro ao carregar usuário:", error);
+        return;
+      }
+
+      setUserId(user?.id ?? null);
+    };
+
+    void loadUser();
   }, []);
 
   const trainingPlaceholder = trainingsLoading
@@ -190,6 +195,53 @@ export default function StudentTrainingFlow() {
     void loadReferencePdfUrl();
   }, [selectedTrainingDetails?.reference_pdf_path]);
 
+  useEffect(() => {
+    const loadQuizQuestions = async () => {
+      setQuizAnswers({});
+      setQuizError(null);
+
+      if (!selectedTraining) {
+        setQuizQuestions([]);
+        return;
+      }
+
+      setQuizLoading(true);
+
+      const { data, error } = await supabase
+        .from("training_questions")
+        .select(
+          "id, question_text, training_question_options (id, option_key, option_text)",
+        )
+        .eq("training_id", selectedTraining)
+        .order("id", { ascending: true });
+
+      if (error) {
+        console.error("Erro ao carregar perguntas:", error);
+        setQuizError("Não foi possível carregar as perguntas.");
+        setQuizQuestions([]);
+        setQuizLoading(false);
+        return;
+      }
+
+      const questions = (data ?? []).map((question) => {
+        const options = (question.training_question_options ?? [])
+          .filter((option) => option.option_text)
+          .sort((a, b) => a.option_key.localeCompare(b.option_key));
+
+        return {
+          id: question.id,
+          question_text: question.question_text,
+          options,
+        };
+      });
+
+      setQuizQuestions(questions);
+      setQuizLoading(false);
+    };
+
+    void loadQuizQuestions();
+  }, [selectedTraining]);
+
   // Carrega URL da capa (signedUrl) quando muda a capacitação selecionada
   useEffect(() => {
     const loadCoverImageUrl = async () => {
@@ -229,7 +281,49 @@ export default function StudentTrainingFlow() {
     if (currentStage > 1) setCurrentStage((s) => s - 1);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    setSubmissionError(null);
+
+    const shouldSubmitAnswers = quizQuestions.length > 0;
+
+    if (shouldSubmitAnswers) {
+      if (!userId) {
+        setSubmissionError("Não foi possível identificar o usuário.");
+        return;
+      }
+
+      const unansweredQuestions = quizQuestions.filter(
+        (question) => !quizAnswers[String(question.id)],
+      );
+
+      if (unansweredQuestions.length > 0) {
+        setSubmissionError("Responda todas as perguntas antes de finalizar.");
+        return;
+      }
+
+      setIsSubmittingAnswers(true);
+
+      const answersPayload = quizQuestions.map((question) => ({
+        training_id: selectedTraining,
+        question_id: question.id,
+        selected_option_key: quizAnswers[String(question.id)],
+        user_id: userId,
+      }));
+
+      const { error } = await supabase
+        .from(TRAINING_ANSWERS_TABLE)
+        .insert(answersPayload);
+
+      if (error) {
+        console.error("Erro ao salvar respostas:", error);
+        setSubmissionError("Não foi possível enviar suas respostas.");
+        setIsSubmittingAnswers(false);
+        return;
+      }
+
+      setIsSubmittingAnswers(false);
+    }
+
     setShowCongratulations(true);
   };
 
@@ -431,34 +525,61 @@ export default function StudentTrainingFlow() {
                 Responda às questões abaixo para validar seu aprendizado.
               </p>
 
-              <div className="space-y-6">
-                {quizQuestions.map((q, qIndex) => (
-                  <div key={q.id} className="space-y-3">
-                    <p className="font-medium text-foreground">
-                      {qIndex + 1}. {q.question}
-                    </p>
-                    <div className="space-y-2">
-                      {q.options.map((option, oIndex) => (
-                        <label
-                          key={oIndex}
-                          className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
-                        >
-                          <input
-                            type="radio"
-                            name={`question_${q.id}`}
-                            checked={quizAnswers[q.id] === oIndex}
-                            onChange={() =>
-                              setQuizAnswers({ ...quizAnswers, [q.id]: oIndex })
-                            }
-                            className="mt-0.5 w-4 h-4 text-student"
-                          />
-                          <span className="text-sm text-foreground">{option}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {quizLoading && (
+                <p className="text-sm text-muted-foreground">
+                  Carregando perguntas...
+                </p>
+              )}
+
+              {quizError && (
+                <p className="text-sm text-destructive">{quizError}</p>
+              )}
+
+              {!quizLoading && !quizError && quizQuestions.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma pergunta foi publicada para esta capacitação.
+                </p>
+              )}
+
+              {!quizLoading && quizQuestions.length > 0 && (
+                <div className="space-y-6">
+                  {quizQuestions.map((question, qIndex) => {
+                    const questionKey = String(question.id);
+
+                    return (
+                      <div key={questionKey} className="space-y-3">
+                        <p className="font-medium text-foreground">
+                          {qIndex + 1}. {question.question_text}
+                        </p>
+                        <div className="space-y-2">
+                          {question.options.map((option) => (
+                            <label
+                              key={`${questionKey}-${option.option_key}`}
+                              className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                            >
+                              <input
+                                type="radio"
+                                name={`question_${questionKey}`}
+                                checked={quizAnswers[questionKey] === option.option_key}
+                                onChange={() =>
+                                  setQuizAnswers({
+                                    ...quizAnswers,
+                                    [questionKey]: option.option_key,
+                                  })
+                                }
+                                className="mt-0.5 w-4 h-4 text-student"
+                              />
+                              <span className="text-sm text-foreground">
+                                {option.option_text}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">
@@ -469,7 +590,12 @@ export default function StudentTrainingFlow() {
                 variant="student"
                 fullWidth
                 onClick={handleNext}
-                disabled={Object.keys(quizAnswers).length < quizQuestions.length}
+                disabled={
+                  quizLoading ||
+                  Boolean(quizError) ||
+                  (quizQuestions.length > 0 &&
+                    Object.keys(quizAnswers).length < quizQuestions.length)
+                }
               >
                 Enviar respostas
               </ButtonRole>
@@ -541,7 +667,7 @@ export default function StudentTrainingFlow() {
               </h3>
 
               <p className="text-muted-foreground mb-6">
-                Parabéns por completar a capacitação Segurança do Paciente.
+                Parabéns por completar a capacitação {selectedTrainingLabel}.
               </p>
 
               <div className="bg-muted rounded-lg p-4 text-left mb-6">
@@ -549,7 +675,7 @@ export default function StudentTrainingFlow() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Capacitação:</span>
-                    <span className="text-foreground">Segurança do Paciente</span>
+                    <span className="text-foreground">{selectedTrainingLabel}</span>
                   </div>
 
                   <div className="flex justify-between">
@@ -594,9 +720,19 @@ export default function StudentTrainingFlow() {
               </div>
             </div>
 
-            <ButtonRole variant="student" fullWidth onClick={handleFinish}>
-              Finalizar
+            <ButtonRole
+              variant="student"
+              fullWidth
+              onClick={handleFinish}
+              disabled={isSubmittingAnswers}
+            >
+              {isSubmittingAnswers ? "Enviando respostas..." : "Finalizar"}
             </ButtonRole>
+            {submissionError && (
+              <p className="text-sm text-destructive text-center">
+                {submissionError}
+              </p>
+            )}
           </div>
         );
 
@@ -655,4 +791,3 @@ export default function StudentTrainingFlow() {
     </div>
   );
 }
-
