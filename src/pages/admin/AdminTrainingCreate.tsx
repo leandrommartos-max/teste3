@@ -189,7 +189,7 @@ export default function AdminTrainingCreate() {
 
       const options = filteredSectors.map((setor) => ({ value: setor, label: setor }));
 
-      setSectorOptions([{ value: "", label: "Todos os setores" }, ...options]);
+      setSectorOptions([...options]);
       setIsSectorLoading(false);
     };
 
@@ -238,7 +238,7 @@ export default function AdminTrainingCreate() {
       );
       const options = uniqueFunctions.map((funcao) => ({ value: funcao, label: funcao }));
 
-      setFunctionOptions([{ value: "", label: "Todas as categorias" }, ...options]);
+      setFunctionOptions([...options]);
       setIsFunctionLoading(false);
     };
 
@@ -280,7 +280,7 @@ export default function AdminTrainingCreate() {
   };
 
   const institutionLabel = (() => {
-    if (institution.length === 0) return "0 seleções";
+    if (institution.length === 0) return "Escolha os locais";
     if (institution.length === 1) {
       const singleInstitution = institution[0];
       return (
@@ -292,7 +292,7 @@ export default function AdminTrainingCreate() {
   })();
 
   const professionalCategoryLabel = (() => {
-    if (professionalCategory.length === 0) return "0 seleções";
+    if (professionalCategory.length === 0) return "Escolha as categorias";
     if (professionalCategory.length === 1) {
       const singleCategory = professionalCategory[0];
       return (
@@ -304,7 +304,7 @@ export default function AdminTrainingCreate() {
   })();
 
   const sectorLabel = (() => {
-    if (sector.length === 0) return "0 seleções";
+    if (sector.length === 0) return "Escolha os setores";
     if (sector.length === 1) {
       const singleSector = sector[0];
       return sectorOptions.find((option) => option.value === singleSector)?.label ?? singleSector;
@@ -718,7 +718,6 @@ export default function AdminTrainingCreate() {
                     {[
                       { value: "obrigatoria", label: "Obrigatória" },
                       { value: "opcional", label: "Opcional" },
-                      { value: "desejavel", label: "Desejável" },
                     ].map((opt) => (
                       <label
                         key={opt.value}
