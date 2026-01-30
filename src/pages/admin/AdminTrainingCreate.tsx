@@ -351,10 +351,11 @@ export default function AdminTrainingCreate() {
         : null;
 
       const payload = {
-        title,
-        description,
+        titulo: title,
+        descricao: description,
         reference_manager: referenceManager,
-        duration_minutes: durationMinutes ? Number(durationMinutes) : null,
+        duracao_minutos: durationMinutes ? Number(durationMinutes) : null,
+        nome_instrutor: referenceManager,
         instructor_name: instructorName,
         version,
         cover_image_path: coverImagePath,
