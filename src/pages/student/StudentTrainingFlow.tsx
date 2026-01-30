@@ -351,7 +351,11 @@ export default function StudentTrainingFlow() {
 
       if (error) {
         console.error("Erro ao salvar respostas:", error);
-        setSubmissionError("Não foi possível enviar suas respostas.");
+        const fallbackMessage =
+          error.message || error.details || "Erro desconhecido.";
+        setSubmissionError(
+          `Não foi possível enviar suas respostas. Detalhes: ${fallbackMessage}`,
+        );
         setIsSubmittingAnswers(false);
         return;
       }
