@@ -348,6 +348,31 @@ export default function AdminTrainingCreate() {
     return filePath;
   };
 
+  const getSaveErrorMessage = (error: unknown) => {
+    if (!error || typeof error !== "object") {
+      return "Erro ao salvar capacitação.";
+    }
+
+    if ("message" in error && typeof error.message === "string" && error.message.trim()) {
+      const details =
+        "details" in error && typeof error.details === "string" && error.details.trim()
+          ? ` (${error.details})`
+          : "";
+      const hint =
+        "hint" in error && typeof error.hint === "string" && error.hint.trim()
+          ? ` Dica: ${error.hint}`
+          : "";
+      const code =
+        "code" in error && typeof error.code === "string" && error.code.trim()
+          ? ` [${error.code}]`
+          : "";
+
+      return `${error.message}${details}${hint}${code}`;
+    }
+
+    return "Erro ao salvar capacitação.";
+  };
+
   const handleSave = async (status: "draft" | "published") => {
     setIsSaving(true);
     setSaveError(null);
@@ -389,6 +414,10 @@ export default function AdminTrainingCreate() {
         .select("id")
         .single();
       if (error) throw error;
+
+      if (!trainingData?.id) {
+        throw new Error("Capacitação criada sem retorno do identificador.");
+      }
 
       const trainingId = trainingData.id;
 
@@ -472,7 +501,8 @@ export default function AdminTrainingCreate() {
 
       navigate("/admin/capacitacoes");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro ao salvar capacitação.";
+      console.error("Erro ao salvar capacitação:", error);
+      const message = getSaveErrorMessage(error);
       setSaveError(message);
     } finally {
       setIsSaving(false);
