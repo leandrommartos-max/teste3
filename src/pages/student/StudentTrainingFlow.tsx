@@ -75,6 +75,21 @@ export default function StudentTrainingFlow() {
 
   const [currentStage, setCurrentStage] = useState(1);
   const [selectedTraining, setSelectedTraining] = useState("");
+  const [trainingOptions, setTrainingOptions] = useState<
+    {
+      value: string;
+      label: string;
+      nome_instrutor: string | null;
+      prazo_conclusao: string | null;
+      duracao_minutos: number | null;
+      descricao: string | null;
+      reference_pdf_path: string | null;
+      cover_image_path: string | null;
+      link_video: string | null;
+    }[]
+  >([]);
+  const [trainingsLoading, setTrainingsLoading] = useState(true);
+  const [trainingsError, setTrainingsError] = useState<string | null>(null);
 
   const [trainingOptions, setTrainingOptions] = useState<TrainingOption[]>([]);
   const [trainingsLoading, setTrainingsLoading] = useState(true);
@@ -107,6 +122,7 @@ export default function StudentTrainingFlow() {
         return;
       }
 
+      const options = (data ?? []).map((training) => ({
       const options: TrainingOption[] = (data ?? []).map((training) => ({
         value: training.id,
         label: training.titulo ?? "Capacitação sem título",
@@ -115,13 +131,15 @@ export default function StudentTrainingFlow() {
         duracao_minutos: training.duracao_minutos ?? null,
         descricao: training.descricao ?? null,
         reference_pdf_path: training.reference_pdf_path ?? null,
+        cover_image_path: training.cover_image_path ?? null,
+        link_video: training.link_video ?? null,
       }));
 
       setTrainingOptions(options);
       setTrainingsLoading(false);
     };
 
-    void loadTrainings();
+    loadTrainings();
   }, []);
 
   const trainingPlaceholder = trainingsLoading
@@ -132,18 +150,15 @@ export default function StudentTrainingFlow() {
     !trainingsLoading && !trainingsError && trainingOptions.length === 0
       ? "Nenhuma capacitação disponível no momento."
       : undefined;
-
+  const selectedTrainingLabel =
+    trainingOptions.find((training) => training.value === selectedTraining)
+      ?.label ?? "Capacitação selecionada";
   const selectedTrainingDetails = trainingOptions.find(
     (training) => training.value === selectedTraining,
   );
-
-  const selectedTrainingLabel =
-    selectedTrainingDetails?.label ?? "Capacitação selecionada";
-
   const prazoConclusaoDate = selectedTrainingDetails?.prazo_conclusao
     ? new Date(selectedTrainingDetails.prazo_conclusao)
     : null;
-
   const formattedPrazoConclusao =
     prazoConclusaoDate && !Number.isNaN(prazoConclusaoDate.getTime())
       ? prazoConclusaoDate.toLocaleDateString("pt-BR")
@@ -184,6 +199,36 @@ export default function StudentTrainingFlow() {
 
     void loadReferencePdfUrl();
   }, [selectedTrainingDetails?.reference_pdf_path]);
+
+  useEffect(() => {
+    const loadCoverImageUrl = async () => {
+      const coverImagePath = selectedTrainingDetails?.cover_image_path ?? null;
+
+      if (!coverImagePath) {
+        setCoverImageUrl(null);
+        return;
+      }
+
+      if (/^https?:\/\//.test(coverImagePath)) {
+        setCoverImageUrl(coverImagePath);
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(coverImagePath, 60 * 60);
+
+      if (error) {
+        console.error("Erro ao gerar URL da capa:", error);
+        setCoverImageUrl(null);
+        return;
+      }
+
+      setCoverImageUrl(data?.signedUrl ?? null);
+    };
+
+    void loadCoverImageUrl();
+  }, [selectedTrainingDetails?.cover_image_path]);
 
   const handleNext = () => {
     if (currentStage < 5) setCurrentStage((s) => s + 1);
@@ -327,16 +372,49 @@ export default function StudentTrainingFlow() {
 
             {/* Video */}
             <div className="card-institutional p-5">
-              <h4 className="font-medium text-foreground mb-3">
-                Vídeo explicativo
-              </h4>
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-student flex items-center justify-center mx-auto mb-3">
-                    <Play className="w-8 h-8 text-white ml-1" />
+              <h4 className="font-medium text-foreground mb-3">Vídeo explicativo</h4>
+              <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                {coverImageUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedTrainingDetails?.link_video) {
+                        window.open(
+                          selectedTrainingDetails.link_video,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }
+                    }}
+                    className="relative h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    disabled={!selectedTrainingDetails?.link_video}
+                  >
+                    <img
+                      src={coverImageUrl}
+                      alt={`Capa do vídeo ${selectedTrainingLabel}`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-student flex items-center justify-center">
+                        <Play className="w-8 h-8 text-white ml-1" />
+                      </div>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-16 h-16 rounded-full bg-student flex items-center justify-center mx-auto mb-3">
+                        <Play className="w-8 h-8 text-white ml-1" />
+                      </div>
+                      <p className="text-muted-foreground">
+                        {selectedTrainingDetails?.link_video
+                          ? "Clique para assistir"
+                          : "Vídeo não informado"}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-muted-foreground">Clique para assistir</p>
-                </div>
+                )}
               </div>
             </div>
 
