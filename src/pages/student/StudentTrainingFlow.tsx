@@ -291,6 +291,11 @@ export default function StudentTrainingFlow() {
     const shouldSubmitAnswers = quizQuestions.length > 0;
 
     if (shouldSubmitAnswers) {
+      if (!selectedTraining) {
+        setSubmissionError("Selecione uma capacitação antes de finalizar.");
+        return;
+      }
+
       if (!userId) {
         setSubmissionError("Não foi possível identificar o usuário.");
         return;
@@ -307,16 +312,42 @@ export default function StudentTrainingFlow() {
 
       setIsSubmittingAnswers(true);
 
-      const answersPayload = quizQuestions.map((question) => ({
-        training_id: selectedTraining,
-        question_id: question.id,
-        selected_option_key: quizAnswers[String(question.id)],
-        user_id: userId,
-      }));
+      const answersPayload = quizQuestions.map((question) => {
+        const selectedKey = quizAnswers[String(question.id)];
+        const selectedOption = question.options.find(
+          (option) => option.option_key === selectedKey,
+        );
 
-      const { error } = await supabase
+        return {
+          training_id: selectedTraining,
+          question_id: question.id,
+          option_id: selectedOption?.id ?? null,
+          user_id: userId,
+        };
+      });
+
+      if (answersPayload.some((answer) => !answer.option_id)) {
+        setSubmissionError("Não foi possível identificar a opção selecionada.");
+        setIsSubmittingAnswers(false);
+        return;
+      }
+
+      let { error } = await supabase
         .from(TRAINING_ANSWERS_TABLE)
-        .insert(answersPayload);
+        .upsert(answersPayload, { onConflict: "user_id,question_id" });
+
+      if (error?.message.includes("option_id")) {
+        const fallbackPayload = quizQuestions.map((question) => ({
+          training_id: selectedTraining,
+          question_id: question.id,
+          selected_option_key: quizAnswers[String(question.id)],
+          user_id: userId,
+        }));
+
+        ({ error } = await supabase
+          .from(TRAINING_ANSWERS_TABLE)
+          .upsert(fallbackPayload, { onConflict: "user_id,question_id" }));
+      }
 
       if (error) {
         console.error("Erro ao salvar respostas:", error);
