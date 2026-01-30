@@ -20,6 +20,7 @@ const termosModelos = [
 ];
 
 const TRAININGS_TABLE = "trainings";
+const TRAINING_LOCATIONS_TABLE = "training_locations";
 const STORAGE_BUCKET = "training-documents";
 
 const tabs = [
@@ -364,7 +365,6 @@ export default function AdminTrainingCreate() {
         version,
         cover_image_path: coverImagePath,
         link_video: videoLink,
-        institution,
         sector,
         professional_category: professionalCategory,
         role_function: roleFunction,
@@ -387,6 +387,18 @@ export default function AdminTrainingCreate() {
       if (error) throw error;
 
       const trainingId = trainingData.id;
+
+      if (institution.length > 0) {
+        const locationRows = institution.map((location) => ({
+          training_id: trainingId,
+          location,
+        }));
+
+        const { error: locationError } = await supabase
+          .from(TRAINING_LOCATIONS_TABLE)
+          .insert(locationRows);
+        if (locationError) throw locationError;
+      }
       const preparedQuestions = questions
         .map((question) => ({
           question,
