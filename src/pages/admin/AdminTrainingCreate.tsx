@@ -75,7 +75,6 @@ export default function AdminTrainingCreate() {
   const [referencePdfFile, setReferencePdfFile] = useState<File | null>(null);
 
   // Term
-  const [termModel, setTermModel] = useState("");
   const [termText, setTermText] = useState("");
 
   // Save
@@ -410,7 +409,6 @@ export default function AdminTrainingCreate() {
         nivel_requisito: requirementLevel,
         audience_message: audienceMessage,
         reference_pdf_path: referencePdfPath,
-        term_model: termModel,
         texto_termo: termText,
         status,
       };
