@@ -20,6 +20,9 @@ const termosModelos = [
 ];
 
 const TRAININGS_TABLE = "trainings";
+const TRAINING_LOCATIONS_TABLE = "training_locations";
+const TRAINING_CATEGORIES_TABLE = "training_professional_categories";
+const TRAINING_SECTORS_TABLE = "training_sectors";
 const STORAGE_BUCKET = "training-documents";
 
 const tabs = [
@@ -364,13 +367,10 @@ export default function AdminTrainingCreate() {
         version,
         cover_image_path: coverImagePath,
         link_video: videoLink,
-        institution,
-        sector,
-        professional_category: professionalCategory,
         role_function: roleFunction,
         employment_bond: employmentBond,
-        completion_deadline: completionDeadline || null,
-        requirement_level: requirementLevel,
+        prazo_conclusao: completionDeadline || null,
+        nivel_requisito: requirementLevel,
         audience_message: audienceMessage,
         reference_pdf_path: referencePdfPath,
         quiz_questions: questions,
@@ -387,6 +387,42 @@ export default function AdminTrainingCreate() {
       if (error) throw error;
 
       const trainingId = trainingData.id;
+
+      if (institution.length > 0) {
+        const locationRows = institution.map((location) => ({
+          training_id: trainingId,
+          location,
+        }));
+
+        const { error: locationError } = await supabase
+          .from(TRAINING_LOCATIONS_TABLE)
+          .insert(locationRows);
+        if (locationError) throw locationError;
+      }
+
+      if (professionalCategory.length > 0) {
+        const categoryRows = professionalCategory.map((category) => ({
+          training_id: trainingId,
+          category,
+        }));
+
+        const { error: categoryError } = await supabase
+          .from(TRAINING_CATEGORIES_TABLE)
+          .insert(categoryRows);
+        if (categoryError) throw categoryError;
+      }
+
+      if (sector.length > 0) {
+        const sectorRows = sector.map((sectorName) => ({
+          training_id: trainingId,
+          sector: sectorName,
+        }));
+
+        const { error: sectorError } = await supabase
+          .from(TRAINING_SECTORS_TABLE)
+          .insert(sectorRows);
+        if (sectorError) throw sectorError;
+      }
       const preparedQuestions = questions
         .map((question) => ({
           question,
