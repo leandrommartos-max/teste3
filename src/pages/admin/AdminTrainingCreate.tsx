@@ -67,7 +67,6 @@ export default function AdminTrainingCreate() {
   const [sector, setSector] = useState<string[]>([]);
   const [professionalCategory, setProfessionalCategory] = useState<string[]>([]);
   const [roleFunction, setRoleFunction] = useState("");
-  const [employmentBond, setEmploymentBond] = useState("");
   const [completionDeadline, setCompletionDeadline] = useState("");
   const [requirementLevel, setRequirementLevel] = useState("");
   const [audienceMessage, setAudienceMessage] = useState("");
@@ -406,7 +405,6 @@ export default function AdminTrainingCreate() {
         cover_image_path: coverImagePath,
         link_video: videoLink,
         role_function: roleFunction,
-        employment_bond: employmentBond,
         prazo_conclusao: completionDeadline || null,
         nivel_requisito: requirementLevel,
         audience_message: audienceMessage,
