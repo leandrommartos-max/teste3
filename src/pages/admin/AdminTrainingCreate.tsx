@@ -375,7 +375,7 @@ export default function AdminTrainingCreate() {
         reference_pdf_path: referencePdfPath,
         quiz_questions: questions,
         term_model: termModel,
-        term_text: termText,
+        texto_termo: termText,
         status,
       };
 
