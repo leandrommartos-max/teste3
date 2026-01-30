@@ -704,6 +704,7 @@ export default function AdminTrainingCreate() {
                       type="date"
                       value={completionDeadline}
                       onChange={(event) => setCompletionDeadline(event.target.value)}
+                      className="py-2.5"
                     />
                   </div>
                 </div>
