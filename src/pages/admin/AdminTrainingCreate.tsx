@@ -370,7 +370,7 @@ export default function AdminTrainingCreate() {
         role_function: roleFunction,
         employment_bond: employmentBond,
         prazo_conclusao: completionDeadline || null,
-        requirement_level: requirementLevel,
+        nivel_requisito: requirementLevel,
         audience_message: audienceMessage,
         reference_pdf_path: referencePdfPath,
         quiz_questions: questions,
