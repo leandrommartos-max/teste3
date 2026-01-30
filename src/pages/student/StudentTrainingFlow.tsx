@@ -63,7 +63,14 @@ export default function StudentTrainingFlow() {
   const [currentStage, setCurrentStage] = useState(1);
   const [selectedTraining, setSelectedTraining] = useState("");
   const [trainingOptions, setTrainingOptions] = useState<
-    { value: string; label: string }[]
+    {
+      value: string;
+      label: string;
+      nome_instrutor: string | null;
+      prazo_conclusao: string | null;
+      duracao_minutos: number | null;
+      descricao: string | null;
+    }[]
   >([]);
   const [trainingsLoading, setTrainingsLoading] = useState(true);
   const [trainingsError, setTrainingsError] = useState<string | null>(null);
@@ -78,7 +85,9 @@ export default function StudentTrainingFlow() {
 
       const { data, error } = await supabase
         .from("trainings")
-        .select("id, titulo")
+        .select(
+          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao",
+        )
         .order("titulo", { ascending: true });
 
       if (error) {
@@ -92,6 +101,10 @@ export default function StudentTrainingFlow() {
       const options = (data ?? []).map((training) => ({
         value: training.id,
         label: training.titulo ?? "Capacitação sem título",
+        nome_instrutor: training.nome_instrutor ?? null,
+        prazo_conclusao: training.prazo_conclusao ?? null,
+        duracao_minutos: training.duracao_minutos ?? null,
+        descricao: training.descricao ?? null,
       }));
 
       setTrainingOptions(options);
@@ -112,6 +125,19 @@ export default function StudentTrainingFlow() {
   const selectedTrainingLabel =
     trainingOptions.find((training) => training.value === selectedTraining)
       ?.label ?? "Capacitação selecionada";
+  const selectedTrainingDetails = trainingOptions.find(
+    (training) => training.value === selectedTraining,
+  );
+  const prazoConclusaoDate = selectedTrainingDetails?.prazo_conclusao
+    ? new Date(selectedTrainingDetails.prazo_conclusao)
+    : null;
+  const formattedPrazoConclusao =
+    prazoConclusaoDate && !Number.isNaN(prazoConclusaoDate.getTime())
+      ? prazoConclusaoDate.toLocaleDateString("pt-BR")
+      : "Prazo não informado";
+  const formattedDuracao = selectedTrainingDetails?.duracao_minutos
+    ? `${selectedTrainingDetails.duracao_minutos} min`
+    : "Duração não informada";
 
   const handleNext = () => {
     if (currentStage < 5) {
@@ -182,21 +208,26 @@ export default function StudentTrainingFlow() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <FileText className="w-4 h-4" />
-                    <span>Nome do Instrutor</span>
+                    <span>
+                      {selectedTrainingDetails?.nome_instrutor
+                        ? selectedTrainingDetails.nome_instrutor
+                        : "Instrutor não informado"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    <span>Prazo: 30/01/2024</span>
+                    <span>Prazo: {formattedPrazoConclusao}</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="w-4 h-4" />
-                    <span>Duração: 45 min</span>
+                    <span>Duração: {formattedDuracao}</span>
                   </div>
                 </div>
 
                 <p className="text-sm text-muted-foreground">
-                  Esta capacitação aborda os princípios fundamentais de segurança do paciente 
-                  conforme diretrizes do Ministério da Saúde e OMS.
+                  {selectedTrainingDetails?.descricao
+                    ? selectedTrainingDetails.descricao
+                    : "Descrição não informada."}
                 </p>
 
                 <ButtonRole variant="student" fullWidth onClick={handleNext}>
