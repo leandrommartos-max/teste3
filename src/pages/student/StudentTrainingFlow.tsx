@@ -336,46 +336,221 @@ export default function StudentTrainingFlow() {
         );
 
         return {
-          training_id: selectedTraining,
           question_id: question.id,
-          option_id: selectedOption?.id ?? null,
-          user_id: userId,
+          selected_option: selectedOption?.id ?? selectedKey ?? null,
         };
       });
 
-      if (answersPayload.some((answer) => !answer.option_id)) {
+      if (answersPayload.some((answer) => !answer.selected_option)) {
         setSubmissionError("Não foi possível identificar a opção selecionada.");
         setIsSubmittingAnswers(false);
         return;
       }
 
-      const keyOnlyPayload = answersPayload.map(
-        ({ option_id: _optionId, ...rest }) => ({
-          ...rest,
-          selected_option_key: quizAnswers[String(rest.question_id)],
-        }),
-      );
-
-      let { error } = await supabase
-        .from(TRAINING_ANSWERS_TABLE)
-        .upsert(answersPayload, { onConflict: "user_id,question_id" });
-
-      if (error?.message?.includes("option_id")) {
-        ({ error } = await supabase
-          .from(TRAINING_ANSWERS_TABLE)
-          .upsert(keyOnlyPayload, { onConflict: "user_id,question_id" }));
+      if (!selectedTraining) {
+        setSubmissionError("Selecione uma capacitação antes de finalizar.");
+        setIsSubmittingAnswers(false);
+        return;
       }
 
-      if (error) {
-        console.error("Erro ao salvar respostas:", error);
+      if (!userId) {
+        setSubmissionError("Não foi possível identificar o usuário.");
+        setIsSubmittingAnswers(false);
+        return;
+      }
+
+      const totalQuestions = quizQuestions.length;
+      const answeredQuestions = Object.keys(quizAnswers).length;
+      const nowIso = new Date().toISOString();
+      const attemptStart = attemptStartedAt ?? nowIso;
+      const resolvedTimeZone =
+        typeof Intl !== "undefined"
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone
+          : null;
+
+      const clientMetadata = {
+        user_agent:
+          typeof navigator !== "undefined" ? navigator.userAgent : null,
+        language: typeof navigator !== "undefined" ? navigator.language : null,
+        platform: typeof navigator !== "undefined" ? navigator.platform : null,
+        timezone: resolvedTimeZone,
+      };
+
+      const trainingMetadata = {
+        training_id: selectedTraining,
+        training_title: selectedTrainingLabel,
+        instructor: selectedTrainingDetails?.nome_instrutor ?? null,
+        duration_minutes: selectedTrainingDetails?.duracao_minutos ?? null,
+        deadline: selectedTrainingDetails?.prazo_conclusao ?? null,
+        started_at: attemptStart,
+        finished_at: nowIso,
+        terms_accepted_at: termsAcceptedAt,
+        total_questions: totalQuestions,
+        answered_questions: answeredQuestions,
+      };
+
+      const attemptPayload = {
+        training_id: selectedTraining,
+        user_id: userId,
+        started_at: attemptStart,
+        finished_at: nowIso,
+        status: "completed",
+        total_questions: totalQuestions,
+        answered_questions: answeredQuestions,
+        terms_accepted_at: termsAcceptedAt,
+        metadata: {
+          ...trainingMetadata,
+          client: clientMetadata,
+        },
+      };
+
+      const attemptFallbackPayload = {
+        training_id: selectedTraining,
+        user_id: userId,
+        started_at: attemptStart,
+        finished_at: nowIso,
+      };
+
+      const attemptResult = await supabase
+        .from(TRAINING_ATTEMPTS_TABLE)
+        .insert(attemptPayload)
+        .select("id")
+        .single();
+
+      let attemptError = attemptResult.error;
+      let attemptId = attemptResult.data?.id ?? null;
+
+      if (attemptError) {
+        const fallbackResult = await supabase
+          .from(TRAINING_ATTEMPTS_TABLE)
+          .insert(attemptFallbackPayload)
+          .select("id")
+          .single();
+
+        attemptError = fallbackResult.error;
+        attemptId = fallbackResult.data?.id ?? null;
+      }
+
+      if (attemptError || !attemptId) {
+        console.error("Erro ao registrar tentativa:", attemptError);
         const fallbackMessage =
-          error.message || error.details || "Erro desconhecido.";
+          attemptError?.message || attemptError?.details || "Erro desconhecido.";
+        setSubmissionError(
+          `Não foi possível registrar a tentativa. Detalhes: ${fallbackMessage}`,
+        );
+        setIsSubmittingAnswers(false);
+        return;
+      }
+
+      const answersWithAttempt = answersPayload.map((answer) => ({
+        ...answer,
+        attempt_id: attemptId,
+      }));
+
+      const answersResult = await supabase
+        .from(TRAINING_ANSWERS_TABLE)
+        .insert(answersWithAttempt);
+
+      if (answersResult.error) {
+        console.error("Erro ao salvar respostas:", answersResult.error);
+        const fallbackMessage =
+          answersResult.error.message ||
+          answersResult.error.details ||
+          "Erro desconhecido.";
         setSubmissionError(
           `Não foi possível enviar suas respostas. Detalhes: ${fallbackMessage}`,
         );
         setIsSubmittingAnswers(false);
         return;
       }
+
+      const recordPayload = {
+        training_id: selectedTraining,
+        user_id: userId,
+        attempt_id: attemptId,
+        completed_at: nowIso,
+        status: "completed",
+        total_questions: totalQuestions,
+        answered_questions: answeredQuestions,
+        terms_accepted_at: termsAcceptedAt,
+        metadata: {
+          ...trainingMetadata,
+          client: clientMetadata,
+        },
+      };
+
+      const recordFallbackPayload = {
+        training_id: selectedTraining,
+        user_id: userId,
+        attempt_id: attemptId,
+        completed_at: nowIso,
+      };
+
+      const recordResult = await supabase
+        .from(TRAINING_RECORDS_TABLE)
+        .insert(recordPayload);
+
+      let recordError = recordResult.error;
+
+      if (recordError) {
+        ({ error: recordError } = await supabase
+          .from(TRAINING_RECORDS_TABLE)
+          .insert(recordFallbackPayload));
+      }
+
+      if (recordError) {
+        console.error("Erro ao registrar conclusão:", recordError);
+        const fallbackMessage =
+          recordError.message || recordError.details || "Erro desconhecido.";
+        setSubmissionError(
+          `Não foi possível registrar a conclusão. Detalhes: ${fallbackMessage}`,
+        );
+        setIsSubmittingAnswers(false);
+        return;
+      }
+
+      const auditPayload = {
+        user_id: userId,
+        action: "training_completed",
+        entity_type: "training",
+        entity_id: selectedTraining,
+        description: `Aluno concluiu a capacitação ${selectedTrainingLabel}.`,
+        metadata: {
+          ...trainingMetadata,
+          attempt_id: attemptId,
+          client: clientMetadata,
+        },
+      };
+
+      const auditFallbackPayload = {
+        user_id: userId,
+        action: "training_completed",
+        entity_id: selectedTraining,
+      };
+
+      const auditResult = await supabase.from(SYS_AUDIT_LOG_TABLE).insert(auditPayload);
+      let auditError = auditResult.error;
+
+      if (auditError) {
+        ({ error: auditError } = await supabase
+          .from(SYS_AUDIT_LOG_TABLE)
+          .insert(auditFallbackPayload));
+      }
+
+      if (auditError) {
+        console.error("Erro ao registrar auditoria:", auditError);
+        const fallbackMessage =
+          auditError.message || auditError.details || "Erro desconhecido.";
+        setSubmissionError(
+          `Não foi possível registrar auditoria. Detalhes: ${fallbackMessage}`,
+        );
+        setIsSubmittingAnswers(false);
+        return;
+      }
+
+      setIsSubmittingAnswers(false);
+      setShowCongratulations(true);
+      return;
     }
 
     if (!selectedTraining) {
@@ -442,9 +617,41 @@ export default function StudentTrainingFlow() {
       finished_at: nowIso,
     };
 
+    const attemptResult = await supabase
+      .from(TRAINING_ATTEMPTS_TABLE)
+      .insert(attemptPayload)
+      .select("id")
+      .single();
+
+    let attemptError = attemptResult.error;
+    let attemptId = attemptResult.data?.id ?? null;
+
+    if (attemptError) {
+      const fallbackResult = await supabase
+        .from(TRAINING_ATTEMPTS_TABLE)
+        .insert(attemptFallbackPayload)
+        .select("id")
+        .single();
+
+      attemptError = fallbackResult.error;
+      attemptId = fallbackResult.data?.id ?? null;
+    }
+
+    if (attemptError || !attemptId) {
+      console.error("Erro ao registrar tentativa:", attemptError);
+      const fallbackMessage =
+        attemptError?.message || attemptError?.details || "Erro desconhecido.";
+      setSubmissionError(
+        `Não foi possível registrar a tentativa. Detalhes: ${fallbackMessage}`,
+      );
+      setIsSubmittingAnswers(false);
+      return;
+    }
+
     const recordPayload = {
       training_id: selectedTraining,
       user_id: userId,
+      attempt_id: attemptId,
       completed_at: nowIso,
       status: "completed",
       total_questions: totalQuestions,
@@ -459,49 +666,9 @@ export default function StudentTrainingFlow() {
     const recordFallbackPayload = {
       training_id: selectedTraining,
       user_id: userId,
+      attempt_id: attemptId,
       completed_at: nowIso,
     };
-
-    const auditPayload = {
-      user_id: userId,
-      action: "training_completed",
-      entity_type: "training",
-      entity_id: selectedTraining,
-      description: `Aluno concluiu a capacitação ${selectedTrainingLabel}.`,
-      metadata: {
-        ...trainingMetadata,
-        client: clientMetadata,
-      },
-    };
-
-    const auditFallbackPayload = {
-      user_id: userId,
-      action: "training_completed",
-      entity_id: selectedTraining,
-    };
-
-    const attemptResult = await supabase
-      .from(TRAINING_ATTEMPTS_TABLE)
-      .insert(attemptPayload);
-
-    let attemptError = attemptResult.error;
-
-    if (attemptError) {
-      ({ error: attemptError } = await supabase
-        .from(TRAINING_ATTEMPTS_TABLE)
-        .insert(attemptFallbackPayload));
-    }
-
-    if (attemptError) {
-      console.error("Erro ao registrar tentativa:", attemptError);
-      const fallbackMessage =
-        attemptError.message || attemptError.details || "Erro desconhecido.";
-      setSubmissionError(
-        `Não foi possível registrar a tentativa. Detalhes: ${fallbackMessage}`,
-      );
-      setIsSubmittingAnswers(false);
-      return;
-    }
 
     const recordResult = await supabase
       .from(TRAINING_RECORDS_TABLE)
@@ -525,6 +692,25 @@ export default function StudentTrainingFlow() {
       setIsSubmittingAnswers(false);
       return;
     }
+
+    const auditPayload = {
+      user_id: userId,
+      action: "training_completed",
+      entity_type: "training",
+      entity_id: selectedTraining,
+      description: `Aluno concluiu a capacitação ${selectedTrainingLabel}.`,
+      metadata: {
+        ...trainingMetadata,
+        attempt_id: attemptId,
+        client: clientMetadata,
+      },
+    };
+
+    const auditFallbackPayload = {
+      user_id: userId,
+      action: "training_completed",
+      entity_id: selectedTraining,
+    };
 
     const auditResult = await supabase.from(SYS_AUDIT_LOG_TABLE).insert(auditPayload);
     let auditError = auditResult.error;
