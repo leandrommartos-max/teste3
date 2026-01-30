@@ -67,7 +67,6 @@ export default function AdminTrainingCreate() {
   const [sector, setSector] = useState<string[]>([]);
   const [professionalCategory, setProfessionalCategory] = useState<string[]>([]);
   const [roleFunction, setRoleFunction] = useState("");
-  const [employmentBond, setEmploymentBond] = useState("");
   const [completionDeadline, setCompletionDeadline] = useState("");
   const [requirementLevel, setRequirementLevel] = useState("");
   const [audienceMessage, setAudienceMessage] = useState("");
