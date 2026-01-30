@@ -404,7 +404,6 @@ export default function AdminTrainingCreate() {
         audience_message: audienceMessage,
         reference_pdf_path: referencePdfPath,
         texto_termo: termText,
-        status,
       };
 
       const { data: trainingData, error } = await supabase
