@@ -189,7 +189,7 @@ export default function AdminTrainingCreate() {
 
       const options = filteredSectors.map((setor) => ({ value: setor, label: setor }));
 
-      setSectorOptions([{ value: "", label: "Todos os setores" }, ...options]);
+      setSectorOptions([...options]);
       setIsSectorLoading(false);
     };
 
@@ -304,7 +304,7 @@ export default function AdminTrainingCreate() {
   })();
 
   const sectorLabel = (() => {
-    if (sector.length === 0) return "0 seleções";
+    if (sector.length === 0) return "Escolha os setores";
     if (sector.length === 1) {
       const singleSector = sector[0];
       return sectorOptions.find((option) => option.value === singleSector)?.label ?? singleSector;
