@@ -80,6 +80,99 @@ export default function StudentTrainingFlow() {
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showCongratulations, setShowCongratulations] = useState(false);
+  const [referencePdfUrl, setReferencePdfUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadTrainings = async () => {
+      setTrainingsLoading(true);
+      setTrainingsError(null);
+
+      const { data, error } = await supabase
+        .from("trainings")
+        .select(
+          "id, titulo, nome_instrutor, prazo_conclusao, duracao_minutos, descricao, reference_pdf_path",
+        )
+        .order("titulo", { ascending: true });
+
+      if (error) {
+        console.error("Erro ao carregar capacitações:", error);
+        setTrainingsError("Não foi possível carregar as capacitações.");
+        setTrainingOptions([]);
+        setTrainingsLoading(false);
+        return;
+      }
+
+      const options = (data ?? []).map((training) => ({
+        value: training.id,
+        label: training.titulo ?? "Capacitação sem título",
+        nome_instrutor: training.nome_instrutor ?? null,
+        prazo_conclusao: training.prazo_conclusao ?? null,
+        duracao_minutos: training.duracao_minutos ?? null,
+        descricao: training.descricao ?? null,
+        reference_pdf_path: training.reference_pdf_path ?? null,
+      }));
+
+      setTrainingOptions(options);
+      setTrainingsLoading(false);
+    };
+
+    loadTrainings();
+  }, []);
+
+  const trainingPlaceholder = trainingsLoading
+    ? "Carregando capacitações..."
+    : "Escolha uma capacitação";
+
+  const trainingHint =
+    !trainingsLoading && !trainingsError && trainingOptions.length === 0
+      ? "Nenhuma capacitação disponível no momento."
+      : undefined;
+  const selectedTrainingLabel =
+    trainingOptions.find((training) => training.value === selectedTraining)
+      ?.label ?? "Capacitação selecionada";
+  const selectedTrainingDetails = trainingOptions.find(
+    (training) => training.value === selectedTraining,
+  );
+  const prazoConclusaoDate = selectedTrainingDetails?.prazo_conclusao
+    ? new Date(selectedTrainingDetails.prazo_conclusao)
+    : null;
+  const formattedPrazoConclusao =
+    prazoConclusaoDate && !Number.isNaN(prazoConclusaoDate.getTime())
+      ? prazoConclusaoDate.toLocaleDateString("pt-BR")
+      : "Prazo não informado";
+  const formattedDuracao = selectedTrainingDetails?.duracao_minutos
+    ? `${selectedTrainingDetails.duracao_minutos} min`
+    : "Duração não informada";
+
+  useEffect(() => {
+    const loadReferencePdfUrl = async () => {
+      const referencePdfPath = selectedTrainingDetails?.reference_pdf_path ?? null;
+
+      if (!referencePdfPath) {
+        setReferencePdfUrl(null);
+        return;
+      }
+
+      if (/^https?:\/\//.test(referencePdfPath)) {
+        setReferencePdfUrl(referencePdfPath);
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(referencePdfPath, 60 * 60);
+
+      if (error) {
+        console.error("Erro ao gerar URL do PDF:", error);
+        setReferencePdfUrl(null);
+        return;
+      }
+
+      setReferencePdfUrl(data?.signedUrl ?? null);
+    };
+
+    void loadReferencePdfUrl();
+  }, [selectedTrainingDetails?.reference_pdf_path]);
 
   useEffect(() => {
     const loadTrainings = async () => {
