@@ -38,7 +38,9 @@ type QuizQuestion = {
   optionA: string;
   optionB: string;
   optionC: string;
-  correct: "a" | "b" | "c" | "";
+  optionD: string;
+  optionE: string;
+  correct: "a" | "b" | "c" | "d" | "e" | "";
 };
 
 export default function AdminTrainingCreate() {
@@ -93,7 +95,7 @@ export default function AdminTrainingCreate() {
 
   // Quiz
   const [questions, setQuestions] = useState<QuizQuestion[]>([
-    { id: 1, question: "", optionA: "", optionB: "", optionC: "", correct: "" },
+    { id: 1, question: "", optionA: "", optionB: "", optionC: "", optionD: "", optionE: "", correct: "" },
   ]);
 
   const hasSupabaseConfig = Boolean(
@@ -258,6 +260,8 @@ export default function AdminTrainingCreate() {
         optionA: "",
         optionB: "",
         optionC: "",
+        optionD: "",
+        optionE: "",
         correct: "",
       },
     ]);
@@ -823,6 +827,20 @@ export default function AdminTrainingCreate() {
                           handleQuestionChange(q.id, "optionC", event.target.value)
                         }
                       />
+                      <InputField
+                        placeholder="Opção D"
+                        value={q.optionD}
+                        onChange={(event) =>
+                          handleQuestionChange(q.id, "optionD", event.target.value)
+                        }
+                      />
+                      <InputField
+                        placeholder="Opção E"
+                        value={q.optionE}
+                        onChange={(event) =>
+                          handleQuestionChange(q.id, "optionE", event.target.value)
+                        }
+                      />
 
                       <SelectField
                         label="Resposta correta"
@@ -830,6 +848,8 @@ export default function AdminTrainingCreate() {
                           { value: "a", label: "Opção A" },
                           { value: "b", label: "Opção B" },
                           { value: "c", label: "Opção C" },
+                          { value: "c", label: "Opção D" },
+                          { value: "c", label: "Opção E" },
                         ]}
                         placeholder="Selecione"
                         value={q.correct}
