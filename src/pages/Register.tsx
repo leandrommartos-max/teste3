@@ -148,7 +148,7 @@ export default function Register() {
 
   // Se NÃO for "outra instituição", limpa os 3 campos extras
   useEffect(() => {
-    if (formData.procedencia !== "Trabalha ou Estuda em Outra Instituição") {
+    if (formData.lk_procedencia !== "Trabalha ou Estuda em Outra Instituição") {
       setFormData((prev) => ({
         ...prev,
         categoria: "",
@@ -172,7 +172,7 @@ export default function Register() {
     }
 
     // Validação condicional: só exige esses campos se for "outra instituição"
-    if (formData.procedencia === "Trabalha ou Estuda em Outra Instituição") {
+    if (formData.lk_procedencia === "Trabalha ou Estuda em Outra Instituição") {
       if (!formData.categoria || !formData.instituicao || !formData.funcaoCurso) {
         alert("Preencha Categoria, Instituição e Função/Curso.");
         return;
@@ -202,15 +202,15 @@ export default function Register() {
         funcao: formData.funcao,
         setor: formData.setor,
         categoria:
-          formData.procedencia === "Trabalha ou Estuda em Outra Instituição"
+          formData.lk_procedencia === "Trabalha ou Estuda em Outra Instituição"
             ? formData.categoria
             : null,
         instituicao:
-          formData.procedencia === "Trabalha ou Estuda em Outra Instituição"
+          formData.lk_procedencia === "Trabalha ou Estuda em Outra Instituição"
             ? formData.instituicao
             : null,
         funcao_curso:
-          formData.procedencia === "Trabalha ou Estuda em Outra Instituição"
+          formData.lk_procedencia === "Trabalha ou Estuda em Outra Instituição"
             ? formData.funcaoCurso
             : null,
         vinculo: vinculo,
@@ -308,7 +308,7 @@ export default function Register() {
               />
 
               {/* Campos extras somente se "outra instituição" */}
-              {formData.procedencia === "Trabalha ou Estuda em Outra Instituição" && (
+              {formData.lk_procedencia === "Trabalha ou Estuda em Outra Instituição" && (
                 <div className="p-4 bg-muted/50 rounded-lg space-y-4">
                   <SelectField
                     label="Categoria *"
