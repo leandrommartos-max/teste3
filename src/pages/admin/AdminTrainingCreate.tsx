@@ -409,7 +409,6 @@ export default function AdminTrainingCreate() {
         nivel_requisito: requirementLevel,
         audience_message: audienceMessage,
         reference_pdf_path: referencePdfPath,
-        quiz_questions: questions,
         term_model: termModel,
         texto_termo: termText,
         status,
