@@ -379,8 +379,56 @@ export default function AdminTrainingCreate() {
         status,
       };
 
-      const { error } = await supabase.from(TRAININGS_TABLE).insert([payload]);
+      const { data: trainingData, error } = await supabase
+        .from(TRAININGS_TABLE)
+        .insert([payload])
+        .select("id")
+        .single();
       if (error) throw error;
+
+      const trainingId = trainingData.id;
+      const preparedQuestions = questions
+        .map((question) => ({
+          question,
+          payload: {
+            training_id: trainingId,
+            question_text: question.question.trim(),
+            correct_option: question.correct,
+          },
+        }))
+        .filter(
+          (item) => item.payload.question_text && item.payload.correct_option
+        );
+
+      if (preparedQuestions.length > 0) {
+        const { data: insertedQuestions, error: questionError } = await supabase
+          .from("training_questions")
+          .insert(preparedQuestions.map((item) => item.payload))
+          .select("id");
+        if (questionError) throw questionError;
+
+        const optionRows = insertedQuestions.flatMap((insertedQuestion, index) => {
+          const { question } = preparedQuestions[index];
+          return [
+            { key: "a", value: question.optionA },
+            { key: "b", value: question.optionB },
+            { key: "c", value: question.optionC },
+          ]
+            .map((option) => ({
+              question_id: insertedQuestion.id,
+              option_key: option.key,
+              option_text: option.value.trim(),
+            }))
+            .filter((option) => option.option_text);
+        });
+
+        if (optionRows.length > 0) {
+          const { error: optionError } = await supabase
+            .from("training_question_options")
+            .insert(optionRows);
+          if (optionError) throw optionError;
+        }
+      }
 
       navigate("/admin/capacitacoes");
     } catch (error) {
