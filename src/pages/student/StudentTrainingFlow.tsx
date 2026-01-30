@@ -27,7 +27,10 @@ const stages = [
   { id: 5, name: "Conclusão", icon: Award },
 ];
 
-const TRAINING_ANSWERS_TABLE = "training_question_answers";
+const TRAINING_ANSWERS_TABLE = "training_answers";
+const TRAINING_ATTEMPTS_TABLE = "training_attempts";
+const TRAINING_RECORDS_TABLE = "training_records";
+const SYS_AUDIT_LOG_TABLE = "sys_audit_log";
 
 type TrainingQuestionOption = {
   id: number | string;
@@ -72,6 +75,8 @@ export default function StudentTrainingFlow() {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsAcceptedAt, setTermsAcceptedAt] = useState<string | null>(null);
+  const [attemptStartedAt, setAttemptStartedAt] = useState<string | null>(null);
 
   const [showCongratulations, setShowCongratulations] = useState(false);
 
@@ -246,6 +251,14 @@ export default function StudentTrainingFlow() {
     void loadQuizQuestions();
   }, [selectedTraining]);
 
+  useEffect(() => {
+    setTermsAccepted(false);
+    setTermsAcceptedAt(null);
+    setAttemptStartedAt(null);
+    setSubmissionError(null);
+    setShowCongratulations(false);
+  }, [selectedTraining]);
+
   // Carrega URL da capa (signedUrl) quando muda a capacitação selecionada
   useEffect(() => {
     const loadCoverImageUrl = async () => {
@@ -278,6 +291,10 @@ export default function StudentTrainingFlow() {
   }, [selectedTrainingDetails?.cover_image_path]);
 
   const handleNext = () => {
+    if (currentStage === 1 && selectedTraining && !attemptStartedAt) {
+      setAttemptStartedAt(new Date().toISOString());
+    }
+
     if (currentStage < 5) setCurrentStage((s) => s + 1);
   };
 
@@ -322,6 +339,7 @@ export default function StudentTrainingFlow() {
           training_id: selectedTraining,
           question_id: question.id,
           option_id: selectedOption?.id ?? null,
+          selected_option_key: selectedKey ?? null,
           user_id: userId,
         };
       });
@@ -332,37 +350,214 @@ export default function StudentTrainingFlow() {
         return;
       }
 
+      const minimalAnswersPayload = answersPayload.map(
+        ({ selected_option_key: _selectedOptionKey, ...rest }) => rest,
+      );
+      const keyOnlyPayload = answersPayload.map(
+        ({ option_id: _optionId, ...rest }) => rest,
+      );
+
+      let answerError = null;
+
       let { error } = await supabase
         .from(TRAINING_ANSWERS_TABLE)
         .upsert(answersPayload, { onConflict: "user_id,question_id" });
 
-      if (error?.message.includes("option_id")) {
-        const fallbackPayload = quizQuestions.map((question) => ({
-          training_id: selectedTraining,
-          question_id: question.id,
-          selected_option_key: quizAnswers[String(question.id)],
-          user_id: userId,
-        }));
-
+      if (error) {
         ({ error } = await supabase
           .from(TRAINING_ANSWERS_TABLE)
-          .upsert(fallbackPayload, { onConflict: "user_id,question_id" }));
+          .upsert(minimalAnswersPayload, { onConflict: "user_id,question_id" }));
       }
 
-      if (error) {
-        console.error("Erro ao salvar respostas:", error);
+      if (error?.message?.includes("option_id")) {
+        ({ error } = await supabase
+          .from(TRAINING_ANSWERS_TABLE)
+          .upsert(keyOnlyPayload, { onConflict: "user_id,question_id" }));
+      }
+
+      answerError = error;
+
+      if (answerError) {
+        console.error("Erro ao salvar respostas:", answerError);
         const fallbackMessage =
-          error.message || error.details || "Erro desconhecido.";
+          answerError.message || answerError.details || "Erro desconhecido.";
         setSubmissionError(
           `Não foi possível enviar suas respostas. Detalhes: ${fallbackMessage}`,
         );
         setIsSubmittingAnswers(false);
         return;
       }
-
-      setIsSubmittingAnswers(false);
     }
 
+    if (!selectedTraining) {
+      setSubmissionError("Selecione uma capacitação antes de finalizar.");
+      setIsSubmittingAnswers(false);
+      return;
+    }
+
+    if (!userId) {
+      setSubmissionError("Não foi possível identificar o usuário.");
+      setIsSubmittingAnswers(false);
+      return;
+    }
+
+    const totalQuestions = quizQuestions.length;
+    const answeredQuestions = Object.keys(quizAnswers).length;
+    const nowIso = new Date().toISOString();
+    const attemptStart = attemptStartedAt ?? nowIso;
+    const resolvedTimeZone =
+      typeof Intl !== "undefined"
+        ? Intl.DateTimeFormat().resolvedOptions().timeZone
+        : null;
+
+    const clientMetadata = {
+      user_agent:
+        typeof navigator !== "undefined" ? navigator.userAgent : null,
+      language: typeof navigator !== "undefined" ? navigator.language : null,
+      platform: typeof navigator !== "undefined" ? navigator.platform : null,
+      timezone: resolvedTimeZone,
+    };
+
+    const trainingMetadata = {
+      training_id: selectedTraining,
+      training_title: selectedTrainingLabel,
+      instructor: selectedTrainingDetails?.nome_instrutor ?? null,
+      duration_minutes: selectedTrainingDetails?.duracao_minutos ?? null,
+      deadline: selectedTrainingDetails?.prazo_conclusao ?? null,
+      started_at: attemptStart,
+      finished_at: nowIso,
+      terms_accepted_at: termsAcceptedAt,
+      total_questions: totalQuestions,
+      answered_questions: answeredQuestions,
+    };
+
+    const attemptPayload = {
+      training_id: selectedTraining,
+      user_id: userId,
+      started_at: attemptStart,
+      finished_at: nowIso,
+      status: "completed",
+      total_questions: totalQuestions,
+      answered_questions: answeredQuestions,
+      terms_accepted_at: termsAcceptedAt,
+      metadata: {
+        ...trainingMetadata,
+        client: clientMetadata,
+      },
+    };
+
+    const attemptFallbackPayload = {
+      training_id: selectedTraining,
+      user_id: userId,
+      started_at: attemptStart,
+      finished_at: nowIso,
+    };
+
+    const recordPayload = {
+      training_id: selectedTraining,
+      user_id: userId,
+      completed_at: nowIso,
+      status: "completed",
+      total_questions: totalQuestions,
+      answered_questions: answeredQuestions,
+      terms_accepted_at: termsAcceptedAt,
+      metadata: {
+        ...trainingMetadata,
+        client: clientMetadata,
+      },
+    };
+
+    const recordFallbackPayload = {
+      training_id: selectedTraining,
+      user_id: userId,
+      completed_at: nowIso,
+    };
+
+    const auditPayload = {
+      user_id: userId,
+      action: "training_completed",
+      entity_type: "training",
+      entity_id: selectedTraining,
+      description: `Aluno concluiu a capacitação ${selectedTrainingLabel}.`,
+      metadata: {
+        ...trainingMetadata,
+        client: clientMetadata,
+      },
+    };
+
+    const auditFallbackPayload = {
+      user_id: userId,
+      action: "training_completed",
+      entity_id: selectedTraining,
+    };
+
+    const attemptResult = await supabase
+      .from(TRAINING_ATTEMPTS_TABLE)
+      .insert(attemptPayload);
+
+    let attemptError = attemptResult.error;
+
+    if (attemptError) {
+      ({ error: attemptError } = await supabase
+        .from(TRAINING_ATTEMPTS_TABLE)
+        .insert(attemptFallbackPayload));
+    }
+
+    if (attemptError) {
+      console.error("Erro ao registrar tentativa:", attemptError);
+      const fallbackMessage =
+        attemptError.message || attemptError.details || "Erro desconhecido.";
+      setSubmissionError(
+        `Não foi possível registrar a tentativa. Detalhes: ${fallbackMessage}`,
+      );
+      setIsSubmittingAnswers(false);
+      return;
+    }
+
+    const recordResult = await supabase
+      .from(TRAINING_RECORDS_TABLE)
+      .insert(recordPayload);
+
+    let recordError = recordResult.error;
+
+    if (recordError) {
+      ({ error: recordError } = await supabase
+        .from(TRAINING_RECORDS_TABLE)
+        .insert(recordFallbackPayload));
+    }
+
+    if (recordError) {
+      console.error("Erro ao registrar conclusão:", recordError);
+      const fallbackMessage =
+        recordError.message || recordError.details || "Erro desconhecido.";
+      setSubmissionError(
+        `Não foi possível registrar a conclusão. Detalhes: ${fallbackMessage}`,
+      );
+      setIsSubmittingAnswers(false);
+      return;
+    }
+
+    const auditResult = await supabase.from(SYS_AUDIT_LOG_TABLE).insert(auditPayload);
+    let auditError = auditResult.error;
+
+    if (auditError) {
+      ({ error: auditError } = await supabase
+        .from(SYS_AUDIT_LOG_TABLE)
+        .insert(auditFallbackPayload));
+    }
+
+    if (auditError) {
+      console.error("Erro ao registrar auditoria:", auditError);
+      const fallbackMessage =
+        auditError.message || auditError.details || "Erro desconhecido.";
+      setSubmissionError(
+        `Não foi possível registrar auditoria. Detalhes: ${fallbackMessage}`,
+      );
+      setIsSubmittingAnswers(false);
+      return;
+    }
+
+    setIsSubmittingAnswers(false);
     setShowCongratulations(true);
   };
 
@@ -656,7 +851,11 @@ export default function StudentTrainingFlow() {
                 <input
                   type="checkbox"
                   checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setTermsAccepted(checked);
+                    setTermsAcceptedAt(checked ? new Date().toISOString() : null);
+                  }}
                   className="mt-0.5 w-4 h-4 text-student rounded"
                 />
                 <span className="text-sm text-foreground">
