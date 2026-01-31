@@ -108,6 +108,26 @@ export default function StudentTrainingFlow() {
     return parts.length > 0 ? parts.join(" | ") : "Erro desconhecido.";
   };
 
+  const getSupabaseActionHint = (error: unknown) => {
+    if (!error || typeof error !== "object") {
+      return null;
+    }
+
+    const err = error as { message?: string; details?: string; code?: string };
+    const message = err.message ?? "";
+    const details = err.details ?? "";
+
+    if (/column .*role.* does not exist/i.test(message + details)) {
+      return "Parece haver uma política RLS antiga usando a coluna \"role\". Revise/remova a policy e recrie com as colunas atuais (ex.: usuario_id).";
+    }
+
+    if (err.code === "42501") {
+      return "A permissão foi negada. Verifique as políticas RLS e o usuário autenticado.";
+    }
+
+    return null;
+  };
+
   // Carrega lista de capacitações (1x)
   useEffect(() => {
     const loadTrainings = async () => {
@@ -559,8 +579,9 @@ export default function StudentTrainingFlow() {
       if (recordError) {
         console.error("Erro ao registrar conclusão:", recordError);
         const fallbackMessage = getSupabaseErrorDetails(recordError);
+        const actionHint = getSupabaseActionHint(recordError);
         setSubmissionError(
-          `Não foi possível registrar a conclusão. Verifique os campos obrigatórios e permissões. Detalhes: ${fallbackMessage}`,
+          `Não foi possível registrar a conclusão. Verifique os campos obrigatórios e permissões. Detalhes: ${fallbackMessage}${actionHint ? ` | Ação sugerida: ${actionHint}` : ""}`,
         );
         setIsSubmittingAnswers(false);
         return;
@@ -753,8 +774,9 @@ export default function StudentTrainingFlow() {
     if (recordError) {
       console.error("Erro ao registrar conclusão:", recordError);
       const fallbackMessage = getSupabaseErrorDetails(recordError);
+      const actionHint = getSupabaseActionHint(recordError);
       setSubmissionError(
-        `Não foi possível registrar a conclusão. Verifique os campos obrigatórios e permissões. Detalhes: ${fallbackMessage}`,
+        `Não foi possível registrar a conclusão. Verifique os campos obrigatórios e permissões. Detalhes: ${fallbackMessage}${actionHint ? ` | Ação sugerida: ${actionHint}` : ""}`,
       );
       setIsSubmittingAnswers(false);
       return;
