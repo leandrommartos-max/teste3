@@ -406,32 +406,12 @@ export default function StudentTrainingFlow() {
 
         return {
           question_id: question.id,
-          selected_option: selectedOption?.id ?? selectedKey ?? null,
+          selected_option: selectedOption?.option_key ?? selectedKey ?? null,
         };
       });
 
       if (answersPayload.some((answer) => !answer.selected_option)) {
         setSubmissionError("Não foi possível identificar a opção selecionada.");
-        setIsSubmittingAnswers(false);
-        return;
-      }
-
-      if (!selectedTraining) {
-        setSubmissionError("Selecione uma capacitação antes de finalizar.");
-        setIsSubmittingAnswers(false);
-        return;
-      }
-
-      if (!userId) {
-        setSubmissionError("Não foi possível identificar o usuário.");
-        setIsSubmittingAnswers(false);
-        return;
-      }
-
-      if (!studentId) {
-        setSubmissionError(
-          "Não foi possível identificar o perfil do aluno. Tente novamente.",
-        );
         setIsSubmittingAnswers(false);
         return;
       }
