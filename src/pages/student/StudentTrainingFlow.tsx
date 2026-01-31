@@ -5,8 +5,6 @@ import {
   Play,
   CheckCircle2,
   Award,
-  Download,
-  Share2,
   ChevronRight,
   Clock,
   Calendar,
@@ -71,10 +69,23 @@ export default function StudentTrainingFlow() {
   const [quizLoading, setQuizLoading] = useState(false);
   const [quizError, setQuizError] = useState<string | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
+
   const [isSubmittingAnswers, setIsSubmittingAnswers] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+
   const [userId, setUserId] = useState<string | null>(null);
+
+  /**
+   * studentId será o ID que controlará RLS/policies nas tabelas:
+   * - training_attempts
+   * - training_answers
+   * - training_records
+   * - sys_audit_log
+   *
+   * Pela sua premissa, student_id replica o uid do auth.users.
+   */
   const [studentId, setStudentId] = useState<string | null>(null);
+
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsAcceptedAt, setTermsAcceptedAt] = useState<string | null>(null);
   const [attemptStartedAt, setAttemptStartedAt] = useState<string | null>(null);
@@ -83,6 +94,7 @@ export default function StudentTrainingFlow() {
 
   const [referencePdfUrl, setReferencePdfUrl] = useState<string | null>(null);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+
   const defaultTermText =
     "Eu, colaborador(a) da Prefeitura Municipal de Paulínia, declaro que:\n\n1. Concluí integralmente o conteúdo da capacitação.\n2. Compreendi os conceitos, procedimentos e diretrizes apresentados.\n3. Me comprometo a aplicar os conhecimentos adquiridos em minhas atividades profissionais.\n4. Estou ciente de que este registro será mantido para fins de auditoria institucional.\n5. Reconheço que o certificado emitido possui validade institucional.\n\nEste termo é assinado eletronicamente através da confirmação abaixo.";
 
@@ -118,11 +130,11 @@ export default function StudentTrainingFlow() {
     const details = err.details ?? "";
 
     if (/column .*role.* does not exist/i.test(message + details)) {
-      return "Parece haver uma política RLS antiga usando a coluna \"role\". Revise/remova a policy e recrie com as colunas atuais (ex.: usuario_id).";
+      return "Existe uma policy RLS antiga referenciando a coluna \"role\". Atualize a policy para validar por student_id = auth.uid().";
     }
 
     if (err.code === "42501") {
-      return "A permissão foi negada. Verifique as políticas RLS e o usuário autenticado.";
+      return "Permissão negada (RLS). Verifique as policies (USING/WITH CHECK) para INSERT/SELECT.";
     }
 
     return null;
@@ -169,6 +181,7 @@ export default function StudentTrainingFlow() {
     void loadTrainings();
   }, []);
 
+  // Carrega usuário e define studentId (controle por auth.uid)
   useEffect(() => {
     const loadUser = async () => {
       const {
@@ -178,29 +191,39 @@ export default function StudentTrainingFlow() {
 
       if (error) {
         console.error("Erro ao carregar usuário:", error);
-        return;
-      }
-
-      setUserId(user?.id ?? null);
-
-      if (!user) {
+        setUserId(null);
         setStudentId(null);
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
+      if (!user) {
+        setUserId(null);
+        setStudentId(null);
+        return;
+      }
+
+      setUserId(user.id);
+
+      /**
+       * Pela sua premissa, student_id replica o uid de auth.users.
+       * Então, para manter consistente, studentId = user.id.
+       *
+       * Se você usa profiles só para garantir que existe perfil, ok,
+       * mas não precisamos “trocar” o ID.
+       */
+      setStudentId(user.id);
+
+      // (Opcional) valida que existe profile
+      const { error: profileError } = await supabase
         .from("profiles")
         .select("user_id")
         .eq("user_id", user.id)
         .single();
 
       if (profileError) {
-        console.error("Erro ao carregar perfil do aluno:", profileError);
-        setStudentId(null);
-        return;
+        console.warn("Aviso: perfil não encontrado ou erro ao validar profile:", profileError);
+        // Você pode decidir bloquear aqui, mas vou manter como warning.
       }
-
-      setStudentId(profile?.user_id ?? user.id);
     };
 
     void loadUser();
@@ -266,6 +289,38 @@ export default function StudentTrainingFlow() {
     void loadReferencePdfUrl();
   }, [selectedTrainingDetails?.reference_pdf_path]);
 
+  // Carrega URL da capa (signedUrl) quando muda a capacitação selecionada
+  useEffect(() => {
+    const loadCoverImageUrl = async () => {
+      const coverImagePath = selectedTrainingDetails?.cover_image_path ?? null;
+
+      if (!coverImagePath) {
+        setCoverImageUrl(null);
+        return;
+      }
+
+      if (/^https?:\/\//.test(coverImagePath)) {
+        setCoverImageUrl(coverImagePath);
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(coverImagePath, 60 * 60);
+
+      if (error) {
+        console.error("Erro ao gerar URL da capa:", error);
+        setCoverImageUrl(null);
+        return;
+      }
+
+      setCoverImageUrl(data?.signedUrl ?? null);
+    };
+
+    void loadCoverImageUrl();
+  }, [selectedTrainingDetails?.cover_image_path]);
+
+  // Carrega perguntas quando muda a capacitação
   useEffect(() => {
     const loadQuizQuestions = async () => {
       setQuizAnswers({});
@@ -321,72 +376,38 @@ export default function StudentTrainingFlow() {
     setShowCongratulations(false);
   }, [selectedTraining]);
 
-  // Carrega URL da capa (signedUrl) quando muda a capacitação selecionada
-  useEffect(() => {
-    const loadCoverImageUrl = async () => {
-      const coverImagePath = selectedTrainingDetails?.cover_image_path ?? null;
-
-      if (!coverImagePath) {
-        setCoverImageUrl(null);
-        return;
-      }
-
-      if (/^https?:\/\//.test(coverImagePath)) {
-        setCoverImageUrl(coverImagePath);
-        return;
-      }
-
-      const { data, error } = await supabase.storage
-        .from(STORAGE_BUCKET)
-        .createSignedUrl(coverImagePath, 60 * 60);
-
-      if (error) {
-        console.error("Erro ao gerar URL da capa:", error);
-        setCoverImageUrl(null);
-        return;
-      }
-
-      setCoverImageUrl(data?.signedUrl ?? null);
-    };
-
-    void loadCoverImageUrl();
-  }, [selectedTrainingDetails?.cover_image_path]);
-
   const handleNext = () => {
     if (currentStage === 1 && selectedTraining && !attemptStartedAt) {
       setAttemptStartedAt(new Date().toISOString());
     }
 
-    if (currentStage < 5) setCurrentStage((s) => s + 1);
+    if (currentStage < 5) {
+      setCurrentStage((s) => s + 1);
+    }
   };
 
   const handleBack = () => {
-    if (currentStage > 1) setCurrentStage((s) => s - 1);
+    if (currentStage > 1) {
+      setCurrentStage((s) => s - 1);
+    }
   };
 
   const handleFinish = async () => {
     setSubmissionError(null);
 
+    if (!selectedTraining) {
+      setSubmissionError("Selecione uma capacitação antes de finalizar.");
+      return;
+    }
+
+    if (!studentId) {
+      setSubmissionError("Não foi possível identificar o aluno (student_id).");
+      return;
+    }
+
     const shouldSubmitAnswers = quizQuestions.length > 0;
 
     if (shouldSubmitAnswers) {
-      if (!selectedTraining) {
-        setSubmissionError("Selecione uma capacitação antes de finalizar.");
-        return;
-      }
-
-      if (!userId) {
-        setSubmissionError("Não foi possível identificar o usuário.");
-        return;
-      }
-
-      if (!studentId) {
-        setSubmissionError(
-          "Não foi possível identificar o perfil do aluno. Tente novamente.",
-        );
-        return;
-      }
-
       const unansweredQuestions = quizQuestions.filter(
         (question) => !quizAnswers[String(question.id)],
       );
@@ -395,245 +416,13 @@ export default function StudentTrainingFlow() {
         setSubmissionError("Responda todas as perguntas antes de finalizar.");
         return;
       }
-
-      setIsSubmittingAnswers(true);
-
-      const answersPayload = quizQuestions.map((question) => {
-        const selectedKey = quizAnswers[String(question.id)];
-        const selectedOption = question.options.find(
-          (option) => option.option_key === selectedKey,
-        );
-
-        return {
-          question_id: question.id,
-          selected_option: selectedOption?.option_key ?? selectedKey ?? null,
-        };
-      });
-
-      if (answersPayload.some((answer) => !answer.selected_option)) {
-        setSubmissionError("Não foi possível identificar a opção selecionada.");
-        setIsSubmittingAnswers(false);
-        return;
-      }
-
-      const totalQuestions = quizQuestions.length;
-      const answeredQuestions = Object.keys(quizAnswers).length;
-      const nowIso = new Date().toISOString();
-      const attemptStart = attemptStartedAt ?? nowIso;
-      const resolvedTimeZone =
-        typeof Intl !== "undefined"
-          ? Intl.DateTimeFormat().resolvedOptions().timeZone
-          : null;
-
-      const clientMetadata = {
-        user_agent:
-          typeof navigator !== "undefined" ? navigator.userAgent : null,
-        language: typeof navigator !== "undefined" ? navigator.language : null,
-        platform: typeof navigator !== "undefined" ? navigator.platform : null,
-        timezone: resolvedTimeZone,
-      };
-
-      const trainingMetadata = {
-        training_id: selectedTraining,
-        training_title: selectedTrainingLabel,
-        instructor: selectedTrainingDetails?.nome_instrutor ?? null,
-        duration_minutes: selectedTrainingDetails?.duracao_minutos ?? null,
-        deadline: selectedTrainingDetails?.prazo_conclusao ?? null,
-        started_at: attemptStart,
-        finished_at: nowIso,
-        terms_accepted_at: termsAcceptedAt,
-        total_questions: totalQuestions,
-        answered_questions: answeredQuestions,
-      };
-
-      const attemptPayload = {
-        student_id: studentId,
-        training_id: selectedTraining,
-        started_at: attemptStart,
-        finished_at: nowIso,
-        status: "completed",
-        total_questions: totalQuestions,
-        answered_questions: answeredQuestions,
-        terms_accepted_at: termsAcceptedAt,
-        metadata: {
-          ...trainingMetadata,
-          user_id: userId,
-          client: clientMetadata,
-        },
-      };
-
-      const attemptFallbackPayload = {
-        student_id: studentId,
-        training_id: selectedTraining,
-        started_at: attemptStart,
-        finished_at: nowIso,
-      };
-
-      const attemptResult = await supabase
-        .from(TRAINING_ATTEMPTS_TABLE)
-        .insert(attemptPayload)
-        .select("id")
-        .single();
-
-      let attemptError = attemptResult.error;
-      let attemptId = attemptResult.data?.id ?? null;
-
-      if (attemptError) {
-        const fallbackResult = await supabase
-          .from(TRAINING_ATTEMPTS_TABLE)
-          .insert(attemptFallbackPayload)
-          .select("id")
-          .single();
-
-        attemptError = fallbackResult.error;
-        attemptId = fallbackResult.data?.id ?? null;
-      }
-
-      if (attemptError || !attemptId) {
-        console.error("Erro ao registrar tentativa:", attemptError);
-        const fallbackMessage = getSupabaseErrorDetails(attemptError);
-        setSubmissionError(
-          `Não foi possível registrar a tentativa. Verifique as permissões e os campos obrigatórios. Detalhes: ${fallbackMessage}`,
-        );
-        setIsSubmittingAnswers(false);
-        return;
-      }
-
-      const answersWithAttempt = answersPayload.map((answer) => ({
-        ...answer,
-        attempt_id: attemptId,
-      }));
-
-      const answersResult = await supabase
-        .from(TRAINING_ANSWERS_TABLE)
-        .insert(answersWithAttempt);
-
-      if (answersResult.error) {
-        console.error("Erro ao salvar respostas:", answersResult.error);
-        const fallbackMessage = getSupabaseErrorDetails(answersResult.error);
-        setSubmissionError(
-          `Não foi possível enviar suas respostas. Verifique se todas as opções estão válidas. Detalhes: ${fallbackMessage}`,
-        );
-        setIsSubmittingAnswers(false);
-        return;
-      }
-
-      const recordPayload = {
-        training_id: selectedTraining,
-        capacitacao_id: selectedTraining,
-        usuario_id: userId,
-        student_id: studentId,
-        attempt_id: attemptId,
-        completed_at: nowIso,
-        status: "completed",
-        total_questions: totalQuestions,
-        answered_questions: answeredQuestions,
-        terms_accepted_at: termsAcceptedAt,
-        metadata: {
-          ...trainingMetadata,
-          client: clientMetadata,
-        },
-      };
-
-      const recordFallbackPayload = {
-        training_id: selectedTraining,
-        capacitacao_id: selectedTraining,
-        usuario_id: userId,
-        student_id: studentId,
-        attempt_id: attemptId,
-        completed_at: nowIso,
-      };
-
-      const recordResult = await supabase
-        .from(TRAINING_RECORDS_TABLE)
-        .insert(recordPayload);
-
-      let recordError = recordResult.error;
-
-      if (recordError) {
-        ({ error: recordError } = await supabase
-          .from(TRAINING_RECORDS_TABLE)
-          .insert(recordFallbackPayload));
-      }
-
-      if (recordError) {
-        console.error("Erro ao registrar conclusão:", recordError);
-        const fallbackMessage = getSupabaseErrorDetails(recordError);
-        const actionHint = getSupabaseActionHint(recordError);
-        setSubmissionError(
-          `Não foi possível registrar a conclusão. Verifique os campos obrigatórios e permissões. Detalhes: ${fallbackMessage}${actionHint ? ` | Ação sugerida: ${actionHint}` : ""}`,
-        );
-        setIsSubmittingAnswers(false);
-        return;
-      }
-
-      const auditPayload = {
-        user_id: userId,
-        action: "training_completed",
-        entity_type: "training",
-        entity_id: selectedTraining,
-        description: `Aluno concluiu a capacitação ${selectedTrainingLabel}.`,
-        metadata: {
-          ...trainingMetadata,
-          attempt_id: attemptId,
-          client: clientMetadata,
-        },
-      };
-
-      const auditFallbackPayload = {
-        user_id: userId,
-        action: "training_completed",
-        entity_id: selectedTraining,
-      };
-
-      const auditResult = await supabase.from(SYS_AUDIT_LOG_TABLE).insert(auditPayload);
-      let auditError = auditResult.error;
-
-      if (auditError) {
-        ({ error: auditError } = await supabase
-          .from(SYS_AUDIT_LOG_TABLE)
-          .insert(auditFallbackPayload));
-      }
-
-      if (auditError) {
-        console.error("Erro ao registrar auditoria:", auditError);
-        const fallbackMessage = getSupabaseErrorDetails(auditError);
-        setSubmissionError(
-          `Não foi possível registrar auditoria. Verifique o acesso ao registro de auditoria. Detalhes: ${fallbackMessage}`,
-        );
-        setIsSubmittingAnswers(false);
-        return;
-      }
-
-      setIsSubmittingAnswers(false);
-      setShowCongratulations(true);
-      return;
     }
 
-    if (!selectedTraining) {
-      setSubmissionError("Selecione uma capacitação antes de finalizar.");
-      setIsSubmittingAnswers(false);
-      return;
-    }
+    setIsSubmittingAnswers(true);
 
-    if (!userId) {
-      setSubmissionError("Não foi possível identificar o usuário.");
-      setIsSubmittingAnswers(false);
-      return;
-    }
-
-    if (!studentId) {
-      setSubmissionError(
-        "Não foi possível identificar o perfil do aluno. Tente novamente.",
-      );
-      setIsSubmittingAnswers(false);
-      return;
-    }
-
-    const totalQuestions = quizQuestions.length;
-    const answeredQuestions = Object.keys(quizAnswers).length;
     const nowIso = new Date().toISOString();
     const attemptStart = attemptStartedAt ?? nowIso;
+
     const resolvedTimeZone =
       typeof Intl !== "undefined"
         ? Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -656,23 +445,25 @@ export default function StudentTrainingFlow() {
       started_at: attemptStart,
       finished_at: nowIso,
       terms_accepted_at: termsAcceptedAt,
-      total_questions: totalQuestions,
-      answered_questions: answeredQuestions,
+      total_questions: quizQuestions.length,
+      answered_questions: Object.keys(quizAnswers).length,
     };
 
+    // 1) Registra tentativa (controlada por student_id)
     const attemptPayload = {
       student_id: studentId,
       training_id: selectedTraining,
       started_at: attemptStart,
       finished_at: nowIso,
       status: "completed",
-      total_questions: totalQuestions,
-      answered_questions: answeredQuestions,
+      total_questions: quizQuestions.length,
+      answered_questions: Object.keys(quizAnswers).length,
       terms_accepted_at: termsAcceptedAt,
       metadata: {
         ...trainingMetadata,
-        user_id: userId,
         client: clientMetadata,
+        // userId só como meta, não como "dono"
+        user_id: userId,
       },
     };
 
@@ -706,37 +497,90 @@ export default function StudentTrainingFlow() {
     if (attemptError || !attemptId) {
       console.error("Erro ao registrar tentativa:", attemptError);
       const fallbackMessage = getSupabaseErrorDetails(attemptError);
+      const actionHint = getSupabaseActionHint(attemptError);
+
       setSubmissionError(
-        `Não foi possível registrar a tentativa. Verifique as permissões e os campos obrigatórios. Detalhes: ${fallbackMessage}`,
+        `Não foi possível registrar a tentativa. Detalhes: ${fallbackMessage}${actionHint ? ` | Ação sugerida: ${actionHint}` : ""}`,
       );
       setIsSubmittingAnswers(false);
       return;
     }
 
+    // 2) Se houver quiz, registra respostas (relacionadas à attempt)
+    if (shouldSubmitAnswers) {
+      const answersPayload = quizQuestions.map((question) => {
+        const selectedKey = quizAnswers[String(question.id)];
+        const selectedOption = question.options.find(
+          (option) => option.option_key === selectedKey,
+        );
+
+        return {
+          attempt_id: attemptId,
+          question_id: question.id,
+          selected_option: selectedOption?.option_key ?? selectedKey ?? null,
+        };
+      });
+
+      if (answersPayload.some((answer) => !answer.selected_option)) {
+        setSubmissionError("Não foi possível identificar a opção selecionada.");
+        setIsSubmittingAnswers(false);
+        return;
+      }
+
+      const answersResult = await supabase
+        .from(TRAINING_ANSWERS_TABLE)
+        .insert(answersPayload);
+
+      if (answersResult.error) {
+        console.error("Erro ao salvar respostas:", answersResult.error);
+        const fallbackMessage = getSupabaseErrorDetails(answersResult.error);
+        const actionHint = getSupabaseActionHint(answersResult.error);
+
+        setSubmissionError(
+          `Não foi possível enviar suas respostas. Detalhes: ${fallbackMessage}${actionHint ? ` | Ação sugerida: ${actionHint}` : ""}`,
+        );
+        setIsSubmittingAnswers(false);
+        return;
+      }
+    }
+
+    // 3) Registra conclusão (training_records) CONTROLADA por student_id
+    //    Aqui está o ponto que quebrava por policy antiga com "role".
     const recordPayload = {
       training_id: selectedTraining,
+      // Se sua tabela ainda tiver capacitacao_id, ok manter:
       capacitacao_id: selectedTraining,
-      usuario_id: userId,
+
       student_id: studentId,
+
       attempt_id: attemptId,
       completed_at: nowIso,
       status: "completed",
-      total_questions: totalQuestions,
-      answered_questions: answeredQuestions,
+      total_questions: quizQuestions.length,
+      answered_questions: Object.keys(quizAnswers).length,
       terms_accepted_at: termsAcceptedAt,
       metadata: {
         ...trainingMetadata,
         client: clientMetadata,
+        user_id: userId,
       },
+
+      /**
+       * Se a tabela tiver usuario_id e você quiser manter,
+       * coloque igual ao studentId (porque studentId = auth.uid):
+       */
+      usuario_id: studentId,
     };
 
     const recordFallbackPayload = {
       training_id: selectedTraining,
       capacitacao_id: selectedTraining,
-      usuario_id: userId,
       student_id: studentId,
       attempt_id: attemptId,
       completed_at: nowIso,
+
+      // manter usuario_id também no fallback:
+      usuario_id: studentId,
     };
 
     const recordResult = await supabase
@@ -746,24 +590,29 @@ export default function StudentTrainingFlow() {
     let recordError = recordResult.error;
 
     if (recordError) {
-      ({ error: recordError } = await supabase
+      const fallbackRes = await supabase
         .from(TRAINING_RECORDS_TABLE)
-        .insert(recordFallbackPayload));
+        .insert(recordFallbackPayload);
+
+      recordError = fallbackRes.error;
     }
 
     if (recordError) {
       console.error("Erro ao registrar conclusão:", recordError);
       const fallbackMessage = getSupabaseErrorDetails(recordError);
       const actionHint = getSupabaseActionHint(recordError);
+
       setSubmissionError(
-        `Não foi possível registrar a conclusão. Verifique os campos obrigatórios e permissões. Detalhes: ${fallbackMessage}${actionHint ? ` | Ação sugerida: ${actionHint}` : ""}`,
+        `Não foi possível registrar a conclusão. Detalhes: ${fallbackMessage}${actionHint ? ` | Ação sugerida: ${actionHint}` : ""}`,
       );
       setIsSubmittingAnswers(false);
       return;
     }
 
+    // 4) Audit log CONTROLADO por student_id
+    //    ATENÇÃO: a tabela sys_audit_log precisa ter coluna student_id (uuid)
     const auditPayload = {
-      user_id: userId,
+      student_id: studentId,
       action: "training_completed",
       entity_type: "training",
       entity_id: selectedTraining,
@@ -772,29 +621,37 @@ export default function StudentTrainingFlow() {
         ...trainingMetadata,
         attempt_id: attemptId,
         client: clientMetadata,
+        user_id: userId,
       },
     };
 
     const auditFallbackPayload = {
-      user_id: userId,
+      student_id: studentId,
       action: "training_completed",
       entity_id: selectedTraining,
     };
 
-    const auditResult = await supabase.from(SYS_AUDIT_LOG_TABLE).insert(auditPayload);
+    const auditResult = await supabase
+      .from(SYS_AUDIT_LOG_TABLE)
+      .insert(auditPayload);
+
     let auditError = auditResult.error;
 
     if (auditError) {
-      ({ error: auditError } = await supabase
+      const fallbackRes = await supabase
         .from(SYS_AUDIT_LOG_TABLE)
-        .insert(auditFallbackPayload));
+        .insert(auditFallbackPayload);
+
+      auditError = fallbackRes.error;
     }
 
     if (auditError) {
       console.error("Erro ao registrar auditoria:", auditError);
       const fallbackMessage = getSupabaseErrorDetails(auditError);
+      const actionHint = getSupabaseActionHint(auditError);
+
       setSubmissionError(
-        `Não foi possível registrar auditoria. Verifique o acesso ao registro de auditoria. Detalhes: ${fallbackMessage}`,
+        `Não foi possível registrar auditoria. Detalhes: ${fallbackMessage}${actionHint ? ` | Ação sugerida: ${actionHint}` : ""}`,
       );
       setIsSubmittingAnswers(false);
       return;
@@ -906,6 +763,7 @@ export default function StudentTrainingFlow() {
               <h4 className="font-medium text-foreground mb-3">
                 Material de estudo
               </h4>
+
               <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
                 <FileText className="w-10 h-10 text-primary" />
                 <div className="flex-1">
@@ -932,7 +790,9 @@ export default function StudentTrainingFlow() {
             </div>
 
             <div className="card-institutional p-5">
-              <h4 className="font-medium text-foreground mb-3">Vídeo explicativo</h4>
+              <h4 className="font-medium text-foreground mb-3">
+                Vídeo explicativo
+              </h4>
 
               <div className="aspect-video bg-muted rounded-lg overflow-hidden">
                 {coverImageUrl ? (
@@ -998,6 +858,7 @@ export default function StudentTrainingFlow() {
               <h4 className="font-medium text-foreground mb-4">
                 Avaliação de conhecimentos
               </h4>
+
               <p className="text-sm text-muted-foreground mb-6">
                 Responda às questões abaixo para validar seu aprendizado.
               </p>
@@ -1009,7 +870,9 @@ export default function StudentTrainingFlow() {
               )}
 
               {quizError && (
-                <p className="text-sm text-destructive">{quizError}</p>
+                <p className="text-sm text-destructive">
+                  {quizError}
+                </p>
               )}
 
               {!quizLoading && !quizError && quizQuestions.length === 0 && (
@@ -1028,6 +891,7 @@ export default function StudentTrainingFlow() {
                         <p className="font-medium text-foreground">
                           {qIndex + 1}. {question.question_text}
                         </p>
+
                         <div className="space-y-2">
                           {question.options.map((option) => (
                             <label
@@ -1063,6 +927,7 @@ export default function StudentTrainingFlow() {
               <ButtonRole variant="outline" fullWidth onClick={handleBack}>
                 Voltar
               </ButtonRole>
+
               <ButtonRole
                 variant="student"
                 fullWidth
@@ -1084,7 +949,9 @@ export default function StudentTrainingFlow() {
         return (
           <div className="space-y-6">
             <div className="card-institutional p-5">
-              <h4 className="font-medium text-foreground mb-4">Termo de ciência</h4>
+              <h4 className="font-medium text-foreground mb-4">
+                Termo de ciência
+              </h4>
 
               <div className="h-64 overflow-y-auto p-4 bg-muted rounded-lg text-sm text-muted-foreground mb-4 whitespace-pre-line">
                 {selectedTrainingDetails?.texto_termo?.trim() || defaultTermText}
@@ -1140,7 +1007,10 @@ export default function StudentTrainingFlow() {
               </p>
 
               <div className="bg-muted rounded-lg p-4 text-left mb-6">
-                <h4 className="font-medium text-foreground mb-3">Resumo</h4>
+                <h4 className="font-medium text-foreground mb-3">
+                  Resumo
+                </h4>
+
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Capacitação:</span>
@@ -1181,7 +1051,6 @@ export default function StudentTrainingFlow() {
                   </p>
                 </div>
               </div>
-
             </div>
 
             <ButtonRole
@@ -1192,6 +1061,7 @@ export default function StudentTrainingFlow() {
             >
               {isSubmittingAnswers ? "Enviando respostas..." : "Finalizar"}
             </ButtonRole>
+
             {submissionError && (
               <p className="text-sm text-destructive text-center">
                 {submissionError}
@@ -1255,3 +1125,4 @@ export default function StudentTrainingFlow() {
     </div>
   );
 }
+
