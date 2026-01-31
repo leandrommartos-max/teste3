@@ -86,6 +86,28 @@ export default function StudentTrainingFlow() {
   const defaultTermText =
     "Eu, colaborador(a) da Prefeitura Municipal de Paulínia, declaro que:\n\n1. Concluí integralmente o conteúdo da capacitação.\n2. Compreendi os conceitos, procedimentos e diretrizes apresentados.\n3. Me comprometo a aplicar os conhecimentos adquiridos em minhas atividades profissionais.\n4. Estou ciente de que este registro será mantido para fins de auditoria institucional.\n5. Reconheço que o certificado emitido possui validade institucional.\n\nEste termo é assinado eletronicamente através da confirmação abaixo.";
 
+  const getSupabaseErrorDetails = (error: unknown) => {
+    if (!error || typeof error !== "object") {
+      return "Erro desconhecido.";
+    }
+
+    const err = error as {
+      message?: string;
+      details?: string;
+      hint?: string;
+      code?: string;
+    };
+
+    const parts = [
+      err.message,
+      err.details,
+      err.hint ? `Dica: ${err.hint}` : undefined,
+      err.code ? `Código: ${err.code}` : undefined,
+    ].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(" | ") : "Erro desconhecido.";
+  };
+
   // Carrega lista de capacitações (1x)
   useEffect(() => {
     const loadTrainings = async () => {
@@ -469,10 +491,9 @@ export default function StudentTrainingFlow() {
 
       if (attemptError || !attemptId) {
         console.error("Erro ao registrar tentativa:", attemptError);
-        const fallbackMessage =
-          attemptError?.message || attemptError?.details || "Erro desconhecido.";
+        const fallbackMessage = getSupabaseErrorDetails(attemptError);
         setSubmissionError(
-          `Não foi possível registrar a tentativa. Detalhes: ${fallbackMessage}`,
+          `Não foi possível registrar a tentativa. Verifique as permissões e os campos obrigatórios. Detalhes: ${fallbackMessage}`,
         );
         setIsSubmittingAnswers(false);
         return;
@@ -489,12 +510,9 @@ export default function StudentTrainingFlow() {
 
       if (answersResult.error) {
         console.error("Erro ao salvar respostas:", answersResult.error);
-        const fallbackMessage =
-          answersResult.error.message ||
-          answersResult.error.details ||
-          "Erro desconhecido.";
+        const fallbackMessage = getSupabaseErrorDetails(answersResult.error);
         setSubmissionError(
-          `Não foi possível enviar suas respostas. Detalhes: ${fallbackMessage}`,
+          `Não foi possível enviar suas respostas. Verifique se todas as opções estão válidas. Detalhes: ${fallbackMessage}`,
         );
         setIsSubmittingAnswers(false);
         return;
@@ -540,10 +558,9 @@ export default function StudentTrainingFlow() {
 
       if (recordError) {
         console.error("Erro ao registrar conclusão:", recordError);
-        const fallbackMessage =
-          recordError.message || recordError.details || "Erro desconhecido.";
+        const fallbackMessage = getSupabaseErrorDetails(recordError);
         setSubmissionError(
-          `Não foi possível registrar a conclusão. Detalhes: ${fallbackMessage}`,
+          `Não foi possível registrar a conclusão. Verifique os campos obrigatórios e permissões. Detalhes: ${fallbackMessage}`,
         );
         setIsSubmittingAnswers(false);
         return;
@@ -579,10 +596,9 @@ export default function StudentTrainingFlow() {
 
       if (auditError) {
         console.error("Erro ao registrar auditoria:", auditError);
-        const fallbackMessage =
-          auditError.message || auditError.details || "Erro desconhecido.";
+        const fallbackMessage = getSupabaseErrorDetails(auditError);
         setSubmissionError(
-          `Não foi possível registrar auditoria. Detalhes: ${fallbackMessage}`,
+          `Não foi possível registrar auditoria. Verifique o acesso ao registro de auditoria. Detalhes: ${fallbackMessage}`,
         );
         setIsSubmittingAnswers(false);
         return;
@@ -688,10 +704,9 @@ export default function StudentTrainingFlow() {
 
     if (attemptError || !attemptId) {
       console.error("Erro ao registrar tentativa:", attemptError);
-      const fallbackMessage =
-        attemptError?.message || attemptError?.details || "Erro desconhecido.";
+      const fallbackMessage = getSupabaseErrorDetails(attemptError);
       setSubmissionError(
-        `Não foi possível registrar a tentativa. Detalhes: ${fallbackMessage}`,
+        `Não foi possível registrar a tentativa. Verifique as permissões e os campos obrigatórios. Detalhes: ${fallbackMessage}`,
       );
       setIsSubmittingAnswers(false);
       return;
@@ -737,10 +752,9 @@ export default function StudentTrainingFlow() {
 
     if (recordError) {
       console.error("Erro ao registrar conclusão:", recordError);
-      const fallbackMessage =
-        recordError.message || recordError.details || "Erro desconhecido.";
+      const fallbackMessage = getSupabaseErrorDetails(recordError);
       setSubmissionError(
-        `Não foi possível registrar a conclusão. Detalhes: ${fallbackMessage}`,
+        `Não foi possível registrar a conclusão. Verifique os campos obrigatórios e permissões. Detalhes: ${fallbackMessage}`,
       );
       setIsSubmittingAnswers(false);
       return;
@@ -776,10 +790,9 @@ export default function StudentTrainingFlow() {
 
     if (auditError) {
       console.error("Erro ao registrar auditoria:", auditError);
-      const fallbackMessage =
-        auditError.message || auditError.details || "Erro desconhecido.";
+      const fallbackMessage = getSupabaseErrorDetails(auditError);
       setSubmissionError(
-        `Não foi possível registrar auditoria. Detalhes: ${fallbackMessage}`,
+        `Não foi possível registrar auditoria. Verifique o acesso ao registro de auditoria. Detalhes: ${fallbackMessage}`,
       );
       setIsSubmittingAnswers(false);
       return;
