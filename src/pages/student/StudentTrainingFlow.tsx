@@ -74,6 +74,7 @@ export default function StudentTrainingFlow() {
   const [isSubmittingAnswers, setIsSubmittingAnswers] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [studentId, setStudentId] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsAcceptedAt, setTermsAcceptedAt] = useState<string | null>(null);
   const [attemptStartedAt, setAttemptStartedAt] = useState<string | null>(null);
@@ -139,6 +140,25 @@ export default function StudentTrainingFlow() {
       }
 
       setUserId(user?.id ?? null);
+
+      if (!user) {
+        setStudentId(null);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profileError) {
+        console.error("Erro ao carregar perfil do aluno:", profileError);
+        setStudentId(null);
+        return;
+      }
+
+      setStudentId(profile?.user_id ?? user.id);
     };
 
     void loadUser();
@@ -318,6 +338,13 @@ export default function StudentTrainingFlow() {
         return;
       }
 
+      if (!studentId) {
+        setSubmissionError(
+          "Não foi possível identificar o perfil do aluno. Tente novamente.",
+        );
+        return;
+      }
+
       const unansweredQuestions = quizQuestions.filter(
         (question) => !quizAnswers[String(question.id)],
       );
@@ -359,6 +386,14 @@ export default function StudentTrainingFlow() {
         return;
       }
 
+      if (!studentId) {
+        setSubmissionError(
+          "Não foi possível identificar o perfil do aluno. Tente novamente.",
+        );
+        setIsSubmittingAnswers(false);
+        return;
+      }
+
       const totalQuestions = quizQuestions.length;
       const answeredQuestions = Object.keys(quizAnswers).length;
       const nowIso = new Date().toISOString();
@@ -390,6 +425,7 @@ export default function StudentTrainingFlow() {
       };
 
       const attemptPayload = {
+        student_id: studentId,
         training_id: selectedTraining,
         started_at: attemptStart,
         finished_at: nowIso,
@@ -405,6 +441,7 @@ export default function StudentTrainingFlow() {
       };
 
       const attemptFallbackPayload = {
+        student_id: studentId,
         training_id: selectedTraining,
         started_at: attemptStart,
         finished_at: nowIso,
@@ -466,6 +503,7 @@ export default function StudentTrainingFlow() {
       const recordPayload = {
         training_id: selectedTraining,
         user_id: userId,
+        student_id: studentId,
         attempt_id: attemptId,
         completed_at: nowIso,
         status: "completed",
@@ -481,6 +519,7 @@ export default function StudentTrainingFlow() {
       const recordFallbackPayload = {
         training_id: selectedTraining,
         user_id: userId,
+        student_id: studentId,
         attempt_id: attemptId,
         completed_at: nowIso,
       };
@@ -564,6 +603,14 @@ export default function StudentTrainingFlow() {
       return;
     }
 
+    if (!studentId) {
+      setSubmissionError(
+        "Não foi possível identificar o perfil do aluno. Tente novamente.",
+      );
+      setIsSubmittingAnswers(false);
+      return;
+    }
+
     const totalQuestions = quizQuestions.length;
     const answeredQuestions = Object.keys(quizAnswers).length;
     const nowIso = new Date().toISOString();
@@ -595,6 +642,7 @@ export default function StudentTrainingFlow() {
     };
 
     const attemptPayload = {
+      student_id: studentId,
       training_id: selectedTraining,
       started_at: attemptStart,
       finished_at: nowIso,
@@ -610,6 +658,7 @@ export default function StudentTrainingFlow() {
     };
 
     const attemptFallbackPayload = {
+      student_id: studentId,
       training_id: selectedTraining,
       started_at: attemptStart,
       finished_at: nowIso,
@@ -649,6 +698,7 @@ export default function StudentTrainingFlow() {
     const recordPayload = {
       training_id: selectedTraining,
       user_id: userId,
+      student_id: studentId,
       attempt_id: attemptId,
       completed_at: nowIso,
       status: "completed",
@@ -664,6 +714,7 @@ export default function StudentTrainingFlow() {
     const recordFallbackPayload = {
       training_id: selectedTraining,
       user_id: userId,
+      student_id: studentId,
       attempt_id: attemptId,
       completed_at: nowIso,
     };
