@@ -22,9 +22,7 @@ export default function TermsAndPrivacy() {
                 1. Termos de Serviço
               </h2>
               <p className="text-muted-foreground mb-4 text-justify">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod 
-                tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
-                quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                Lembrar de trocar depois
               </p>
               <p className="text-muted-foreground mb-6 text-justify">
                 Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore 
