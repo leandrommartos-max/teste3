@@ -502,7 +502,7 @@ export default function StudentTrainingFlow() {
 
       const recordPayload = {
         training_id: selectedTraining,
-        user_id: userId,
+        usuario_id: userId,
         student_id: studentId,
         attempt_id: attemptId,
         completed_at: nowIso,
@@ -518,7 +518,7 @@ export default function StudentTrainingFlow() {
 
       const recordFallbackPayload = {
         training_id: selectedTraining,
-        user_id: userId,
+        usuario_id: userId,
         student_id: studentId,
         attempt_id: attemptId,
         completed_at: nowIso,
@@ -697,7 +697,7 @@ export default function StudentTrainingFlow() {
 
     const recordPayload = {
       training_id: selectedTraining,
-      user_id: userId,
+      usuario_id: userId,
       student_id: studentId,
       attempt_id: attemptId,
       completed_at: nowIso,
@@ -713,7 +713,7 @@ export default function StudentTrainingFlow() {
 
     const recordFallbackPayload = {
       training_id: selectedTraining,
-      user_id: userId,
+      usuario_id: userId,
       student_id: studentId,
       attempt_id: attemptId,
       completed_at: nowIso,
